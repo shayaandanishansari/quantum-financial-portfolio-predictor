@@ -1,0 +1,21 @@
+
+-----------------------------------------------------------------------------
+
+                     PORTFOLIO OPTIMIZATION RESULTS LOG                      
+
+-----------------------------------------------------------------------------
+
+Tickers: ['AAPL', 'MSFT', 'JNJ', 'XOM', 'JPM', 'SPY', 'QQQ', 'IWM', 'XLV', 'XLF', 'TLT', 'LQD', 'GLD', 'USO', 'EFA']
+
+Config:
+    'LOOKBACK_WINDOW': 30,
+    'FORECAST_WINDOW': 7,
+    'DYNAMIC_PO': true,
+    'DPO_INTERVAL': 30,
+    'SHORT_SELLING': true,
+    'CLAMP_NEGATIVES': true,
+    'CV_SPLITS': 7,
+    'VERBOSE': 0,
+    'SEED': 68,
+    'DEBUG': false
+
