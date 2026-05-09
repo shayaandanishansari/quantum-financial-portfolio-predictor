@@ -270,6 +270,7 @@ class QuantumNeuralNetwork(nn.Module):
         output_activation: callable = None,
         encoding: str = 'amplitude',
         input_transformation: callable = None,
+        transformed_input_size: int = None,
         entanglement: str = 'reverse_linear',
         device: str = 'cpu',
         seed: int = None,
@@ -311,6 +312,8 @@ class QuantumNeuralNetwork(nn.Module):
             self.actual_input_size = input_size * 4
         elif input_transformation == input_transformations.radial_to_linear_small:
             self.actual_input_size = input_size * 2
+        elif transformed_input_size is not None:
+            self.actual_input_size = transformed_input_size
         else:
             self.actual_input_size = input_size
 

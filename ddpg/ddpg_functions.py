@@ -47,6 +47,8 @@ class DDPG:
         self.lookback_window = lookback_window
         self.batch_size = batch_size
         self.predictor = predictor
+        self.critic_predictor = kwargs.pop('critic_predictor', predictor)
+        self.critic_predictor_kwargs = kwargs.pop('critic_predictor_kwargs', {})
         self.predictor_kwargs = kwargs
         self.short_selling = short_selling
         self.forecast_window = forecast_window
@@ -123,10 +125,10 @@ class DDPG:
             **self.predictor_kwargs,
             seed=self.seed,
         )
-        critic = self.predictor(
+        critic = self.critic_predictor(
             input_size=self.input_size + self.output_size,
             output_size=1,
-            **self.predictor_kwargs,
+            **self.critic_predictor_kwargs,
             seed=self.seed,
         )
 

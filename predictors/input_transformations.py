@@ -9,7 +9,9 @@ Methods:
     standardize: Standardizes the data using z-score normalization.
     radial_to_linear: Transforms data using direct Cartesian feature augmentations
         to escape radial patterns.
+    PCATransform: Stateful PCA dimensionality reduction fitted on training windows.
 '''
+import numpy as np
 import torch
 
 
@@ -105,6 +107,38 @@ def radial_to_linear(
     ], dim=-1)  # Concatenate along the feature dimension
 
     return transformed_data
+
+
+class PCATransform:
+    '''Stateful PCA dimensionality reduction for quantum angle encoding.
+
+    Fit on training windows (flattened), then applied per-window inside the
+    QNN forward pass to reduce a high-dimensional input to n_components
+    principal components before angle encoding.
+
+    Args:
+        n_components (int): Number of principal components to retain.
+    '''
+    __name__ = 'PCATransform'
+
+    def __init__(self, n_components: int = 15):
+        self.n_components = n_components
+        self._pca = None
+
+    def fit(self, windows: np.ndarray):
+        '''Fit PCA on a matrix of flattened training windows.
+
+        Args:
+            windows (np.ndarray): Shape (n_samples, n_features).
+        '''
+        from sklearn.decomposition import PCA
+        self._pca = PCA(n_components=self.n_components)
+        self._pca.fit(windows)
+
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+        arr = tensor.detach().numpy().reshape(1, -1)
+        transformed = self._pca.transform(arr).squeeze()
+        return torch.tensor(transformed, dtype=torch.float32)
 
 
 def radial_to_linear_small(
