@@ -102,7 +102,7 @@ def progress_bar(
     bar_size=30,
     prefix='',
     suffix='',
-    fill='█',
+    fill='#',
     print_end='\n',
 ):
     '''A custom progress bar function that overwrites itself in the terminal.

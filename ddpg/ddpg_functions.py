@@ -48,8 +48,10 @@ class DDPG:
         self.batch_size = batch_size
         self.predictor = predictor
         self.critic_predictor = kwargs.pop('critic_predictor', predictor)
-        self.critic_predictor_kwargs = kwargs.pop('critic_predictor_kwargs', {})
+        self.critic_predictor_kwargs = kwargs.pop('critic_predictor_kwargs', None)
         self.predictor_kwargs = kwargs
+        if self.critic_predictor_kwargs is None:
+            self.critic_predictor_kwargs = dict(kwargs)
         self.short_selling = short_selling
         self.forecast_window = forecast_window
         self.reduce_negatives = reduce_negatives

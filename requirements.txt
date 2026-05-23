@@ -25,3 +25,5 @@ torch
 tqdm
 urllib3
 yfinance
+statsforecast
+utilsforecast
