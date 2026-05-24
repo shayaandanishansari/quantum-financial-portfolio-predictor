@@ -12,7 +12,7 @@ from humanfriendly import format_timespan
 
 from config import tickers
 from predictors import NeuralNetwork, QuantumNeuralNetwork
-from predictors.input_transformations import radial_to_linear, PCATransform
+from predictors.input_transformations import radial_to_linear, PCATransform, PCAWithNormalization
 
 from models import (
     EqualWeights,
@@ -47,7 +47,7 @@ GLOBAL_CONFIG = {
     'DPO_INTERVAL': 30,  # rebalancing interval for dynamic portfolio optimization
     'SHORT_SELLING': True,  # whether to allow negative asset weights
     'CLAMP_NEGATIVES': True,  # whether to clamp negative asset weights to -100%
-    'CV_SPLITS': 7,  # number of crossvalidation splits
+    'CV_SPLITS': 3,  # number of crossvalidation splits
     'VERBOSE': 0,  # verbosity level for training process logging
     'SEED': 68,  # seed for reproducibility
     'DEBUG': False,  # whether to log all events to a file for debugging purposes
@@ -154,17 +154,17 @@ Quantum Deterministic Policy Gradient (Angle Encoding + PCA)
             train_data.iloc[i:i + window_size].values.flatten()
             for i in range(len(train_data) - window_size)
         ])
-        pca = PCATransform(n_components=len(tickers))
+        pca = PCAWithNormalization(n_components=len(tickers))
         pca.fit(training_windows)
 
         model = DDPG(
             lookback_window=window_size,
             forecast_window=0,
-            batch_size=1,
+            batch_size=32,
             predictor=QuantumNeuralNetwork,
             critic_predictor=NeuralNetwork,
             critic_predictor_kwargs={'hidden_sizes': (30,)},
-            num_weights=60,
+            num_weights=30,
             encoding='angle',
             input_transformation=pca,
             transformed_input_size=len(tickers),
@@ -185,7 +185,7 @@ Quantum Deterministic Policy Gradient (Angle Encoding + PCA)
             risk_preference=-0.9286138365176491,
             gamma=0.009826640813865617,
             num_epochs=50,
-            early_stopping=False,
+            early_stopping=True,
             patience=10,
         )
         results = model.evaluate(

@@ -14,7 +14,7 @@ Config:
     'DPO_INTERVAL': 30,
     'SHORT_SELLING': true,
     'CLAMP_NEGATIVES': true,
-    'CV_SPLITS': 7,
+    'CV_SPLITS': 3,
     'VERBOSE': 0,
     'SEED': 68,
     'DEBUG': false
@@ -22,20 +22,5 @@ Config:
 
 -----------------------------------------------------------------------------
 Quantum Deterministic Policy Gradient (Angle Encoding + PCA)
------------------------------------------------------------------------------
-
-Execution time: 2 hours, 16 minutes and 38.58 seconds
-
-Results:
-    
-Average Profit p.a. (SPO):	-0.8295 % (std: 3.0241, min: -4.0209, max: 2.0273)
-Average Sharpe Ratio (SPO):	-0.3073 (std: 0.1251, min: -0.4101, max: -0.1600)
-
-Average Profit p.a. (DPO):	-0.8209 % (std: 2.6659, min: -3.7174, max: 1.6144)
-Average Sharpe Ratio (DPO):	-0.3105 (std: 0.1084, min: -0.4036, max: -0.1869)
-
-
------------------------------------------------------------------------------
-Quantum Deterministic Policy Gradient
 -----------------------------------------------------------------------------
 

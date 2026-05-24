@@ -136,9 +136,42 @@ class PCATransform:
         self._pca.fit(windows)
 
     def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
-        arr = tensor.detach().numpy().reshape(1, -1)
-        transformed = self._pca.transform(arr).squeeze()
+        arr = tensor.detach().numpy()
+        batched = arr.ndim == 2
+        if not batched:
+            arr = arr.reshape(1, -1)
+        transformed = self._pca.transform(arr.reshape(len(arr), -1))
+        if not batched:
+            transformed = transformed.squeeze()
         return torch.tensor(transformed, dtype=torch.float32)
+
+
+class PCAWithNormalization:
+    '''PCA dimensionality reduction followed by per-sample arcsin normalization.
+
+    Bounds PCA output to [−π/2, π/2] so values are well-conditioned
+    for angle encoding in a quantum circuit. Supports both single samples
+    and batched inputs.
+
+    Args:
+        n_components (int): Number of principal components to retain.
+    '''
+    __name__ = 'PCAWithNormalization'
+
+    def __init__(self, n_components: int = 15):
+        self.n_components = n_components
+        self._pca = PCATransform(n_components)
+
+    def fit(self, windows: np.ndarray):
+        self._pca.fit(windows)
+
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+        out = self._pca(tensor)  # (n_components,) or (b, n_components)
+        # Per-sample min-max to [-1, 1] then arcsin → bounds output to [-π/2, π/2]
+        min_val = out.min(dim=-1, keepdim=True).values
+        max_val = out.max(dim=-1, keepdim=True).values
+        normalized = 2 * (out - min_val) / (max_val - min_val + 1e-8) - 1
+        return torch.arcsin(normalized.clamp(-1 + 1e-6, 1 - 1e-6))
 
 
 def radial_to_linear_small(

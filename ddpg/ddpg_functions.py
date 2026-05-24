@@ -314,78 +314,76 @@ class DDPGTrainer:
                 details, can be 0, 1, or 2. Defaults to 1.
         '''
         replay_buffer = ReplayBuffer()
-        
+        batch_size = train_loader.batch_size
+
         for epoch in range(num_epochs):
             total_actor_loss = 0
             total_critic_loss = 0
 
             for state, next_state in train_loader:
+                # state: (b, window_size, n_assets)
+                b = state.shape[0]
+                state_flat = state.view(b, -1)        # (b, window_size * n_assets)
+                next_flat  = next_state.view(b, -1)
 
-                # Compute current portfolio allocation and Q-value
-                portfolio_allocation = self.actor(state.flatten())
+                # Batched actor forward pass
+                portfolio_allocation = self.actor(state_flat)  # (b, n_assets)
                 exploration_noise = torch.normal(0, noise, portfolio_allocation.shape)
                 noisy_portfolio_allocation = portfolio_allocation + exploration_noise
 
-                # Set target value = average profit + risk preference * volatility
-                avg_profit = torch.mean(
-                    torch.sum(state.view(-1, self.number_of_assets) * noisy_portfolio_allocation,
-                              dim=-1)
-                ).detach().cpu()
-                volatility = torch.std(
-                    torch.sum(state.view(-1, self.number_of_assets) * noisy_portfolio_allocation,
-                              dim=-1),
-                    correction=0, # maximum likelihood estimation
-                ).detach().cpu()
-                reward = avg_profit + self.risk_preference * volatility
+                # Per-sample reward: mean daily return + risk penalty on volatility
+                daily_returns = torch.sum(
+                    state * noisy_portfolio_allocation.unsqueeze(1), dim=-1
+                )  # (b, window_size)
+                avg_profit = daily_returns.mean(dim=1).detach().cpu()   # (b,)
+                volatility  = daily_returns.std(dim=1, correction=0).detach().cpu()  # (b,)
+                reward = avg_profit + self.risk_preference * volatility  # (b,)
 
-                # Store transition in replay buffer
-                replay_buffer.push((
-                    state.detach(),
-                    noisy_portfolio_allocation.detach(),
-                    reward.detach(),
-                    next_state.detach()))
+                # Push each transition individually into replay buffer
+                for i in range(b):
+                    replay_buffer.push((
+                        state[i].detach(),
+                        noisy_portfolio_allocation[i].detach(),
+                        reward[i].detach(),
+                        next_state[i].detach(),
+                    ))
 
-                # Sample transition from replay buffer
-                transition = replay_buffer.sample(1)
-                state = transition[0][0]
-                noisy_portfolio_allocation = transition[0][1]
-                reward = transition[0][2]
-                next_state = transition[0][3]
+                # Sample a full batch from replay buffer
+                k = min(batch_size, len(replay_buffer))
+                transitions = replay_buffer.sample(k)
+                s  = torch.stack([t[0] for t in transitions])   # (k, window, assets)
+                a  = torch.stack([t[1] for t in transitions])   # (k, assets)
+                r  = torch.stack([t[2] for t in transitions])   # (k,)
+                ns = torch.stack([t[3] for t in transitions])   # (k, window, assets)
 
-                portfolio_allocation = self.actor(state.flatten())
+                s_flat  = s.view(k, -1)   # (k, window * assets)
+                ns_flat = ns.view(k, -1)
 
-                # Use target networks for next state action and Q-value if soft
-                # updates are enabled, else use regular ones
+                portfolio_allocation = self.actor(s_flat)  # (k, assets)
+
+                # Use target networks if soft update enabled
                 if self.soft_update:
-                    next_portfolio_allocation = self.target_actor(next_state.flatten())
+                    next_portfolio_allocation = self.target_actor(ns_flat)
                     next_q_value = self.target_critic(
-                        torch.cat((next_state.flatten(),
-                                next_portfolio_allocation.flatten()))
-                    )
+                        torch.cat([ns_flat, next_portfolio_allocation], dim=1))
                 else:
-                    next_portfolio_allocation = self.actor(next_state.flatten())
+                    next_portfolio_allocation = self.actor(ns_flat)
                     next_q_value = self.critic(
-                        torch.cat((next_state.flatten(),
-                                   next_portfolio_allocation.flatten()))
-                    )
+                        torch.cat([ns_flat, next_portfolio_allocation], dim=1))
 
                 # Calculate target Q-value according to update function
-                target_q_value = reward + self.gamma * next_q_value
+                target_q_value = r.unsqueeze(1) + self.gamma * next_q_value  # (k, 1)
 
                 # Critic loss and backpropagation
-                q_value = self.critic(
-                    torch.cat((state.flatten(),
-                               noisy_portfolio_allocation.flatten()))
-                )
-                critic_loss = (target_q_value - q_value).pow(2)
+                q_value = self.critic(torch.cat([s_flat, a], dim=1))  # (k, 1)
+                critic_loss = (target_q_value - q_value).pow(2).mean()
                 self.critic_optimizer.zero_grad()
                 critic_loss.backward(retain_graph=True)
                 self.critic_optimizer.step()
 
-                # Actor evaluation
-                critic_input = torch.cat(
-                    (state.flatten(), portfolio_allocation.flatten()))
-                actor_loss = -self.critic(critic_input)
+                # Actor loss (maximise Q-value)
+                actor_loss = -self.critic(
+                    torch.cat([s_flat, portfolio_allocation], dim=1)).mean()
 
                 # Add L1/L2 regularization to actor loss
                 l1_actor = sum(weight.abs().sum() for weight in self.actor.parameters())
@@ -410,35 +408,31 @@ class DDPGTrainer:
                 with torch.no_grad():
                     val_critic_loss = 0
                     for state, next_state in val_loader:
-                        portfolio_allocation = self.actor(state.flatten())
+                        b = state.shape[0]
+                        state_flat = state.view(b, -1)
+                        next_flat  = next_state.view(b, -1)
+
+                        portfolio_allocation = self.actor(state_flat)  # (b, assets)
                         q_value = self.critic(
-                            torch.cat((state.flatten(), portfolio_allocation.flatten()))
-                        )
+                            torch.cat([state_flat, portfolio_allocation], dim=1))
 
                         if self.soft_update:
-                            next_portfolio_allocation = self.target_actor(next_state.flatten())
+                            next_pa = self.target_actor(next_flat)
                             next_q_value = self.target_critic(
-                                torch.cat((next_state.flatten(), next_portfolio_allocation.flatten()))
-                            )
+                                torch.cat([next_flat, next_pa], dim=1))
                         else:
-                            next_portfolio_allocation = self.actor(next_state.flatten())
+                            next_pa = self.actor(next_flat)
                             next_q_value = self.critic(
-                                torch.cat((next_state.flatten(), next_portfolio_allocation.flatten()))
-                            )
+                                torch.cat([next_flat, next_pa], dim=1))
 
-                        avg_profit = torch.mean(
-                            torch.sum(state.view(-1, self.number_of_assets) * portfolio_allocation,
-                                    dim=-1)
-                        ).detach().cpu()
-                        volatility = torch.std(
-                            torch.sum(state.view(-1, self.number_of_assets) * portfolio_allocation,
-                                    dim=-1),
-                            correction=0, # maximum likelihood estimation
-                        ).detach().cpu()
+                        daily_returns = torch.sum(
+                            state * portfolio_allocation.unsqueeze(1), dim=-1)
+                        avg_profit = daily_returns.mean(dim=1).detach().cpu()
+                        volatility  = daily_returns.std(dim=1, correction=0).detach().cpu()
                         reward = avg_profit + self.risk_preference * volatility
 
-                        target_q_value = reward + self.gamma * next_q_value
-                        val_critic_loss += (target_q_value - q_value).pow(2).item()
+                        target_q_value = reward.unsqueeze(1) + self.gamma * next_q_value
+                        val_critic_loss += (target_q_value - q_value).pow(2).mean().item()
 
                     avg_val_critic_loss = val_critic_loss / len(val_loader)
 
