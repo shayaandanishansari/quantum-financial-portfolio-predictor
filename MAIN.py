@@ -12,7 +12,7 @@ from humanfriendly import format_timespan
 
 from config import tickers
 from predictors import NeuralNetwork, QuantumNeuralNetwork
-from predictors.input_transformations import radial_to_linear
+from predictors.input_transformations import radial_to_linear, PCATransform
 
 from models import (
     EqualWeights,
@@ -31,12 +31,13 @@ from utilities.logger import ResultsLogger, activate_operations_logging
 
 # Choose which pipelines to run.
 RUN_MODELS = [
-    'Equal Weights',
-    'Mean Variance Optimization',
-    'DDPG',
-    'QDPG',
-    'Deep Q-Learning',
-    'Quantum Q-Learning',
+    # 'Equal Weights',
+    # 'Mean Variance Optimization',
+    # 'DDPG',
+    # 'QDPG',
+    'QDPG Angle',
+    # 'Deep Q-Learning',
+    # 'Quantum Q-Learning',
 ]
 
 GLOBAL_CONFIG = {
@@ -288,6 +289,78 @@ Quantum Deterministic Policy Gradient
             # weight_decay=1e-6,
             soft_update=False,
             # tau=1e-3,
+            risk_preference=-0.9286138365176491,
+            gamma=0.009826640813865617,
+            num_epochs=50,
+            early_stopping=False,
+            patience=10,
+        )
+        results = model.evaluate(
+            test_data=test_data,
+            dpo=GLOBAL_CONFIG['DYNAMIC_PO'],
+        )
+        cv_results.append(results)
+
+    results_logger.log('Execution time: ' + format_timespan(time.time() - start_time) + '\n',
+        console=False)
+    results_logger.log(print_results(cv_results, dpo=GLOBAL_CONFIG['DYNAMIC_PO']))
+
+
+if 'QDPG Angle' in RUN_MODELS:
+
+    results_logger.log('''
+-----------------------------------------------------------------------------
+Quantum Deterministic Policy Gradient (Angle Encoding + PCA)
+-----------------------------------------------------------------------------
+''')
+
+    start_time = time.time()
+    cv_results = []
+
+    for train_index, test_index in crossvalidation():
+
+        val_split = int(len(price_data.iloc[train_index]) * 0.8)
+        train_data = price_data.iloc[train_index][:val_split]
+        val_data = price_data.iloc[train_index][val_split:]
+        test_data = price_data.iloc[test_index]
+
+        # Build non-overlapping windows from training data to fit PCA.
+        # Uses raw (non-ARIMA) windows — sufficient for capturing the return
+        # covariance structure; avoids the ARIMA overhead at fitting time.
+        n_datapoints = GLOBAL_CONFIG['LOOKBACK_WINDOW'] + GLOBAL_CONFIG['FORECAST_WINDOW']
+        train_vals = train_data.values
+        n_windows = len(train_vals) // n_datapoints - 1
+        assert n_windows > 0, f'Insufficient training data for PCA fit: {len(train_vals)} rows'
+        pca_fit_data = np.array([
+            train_vals[i * n_datapoints:(i + 1) * n_datapoints].flatten()
+            for i in range(n_windows)
+        ])
+
+        pca_transform = PCATransform(n_components=5)
+        pca_transform.fit(pca_fit_data)
+
+        model = DDPG(
+            lookback_window=GLOBAL_CONFIG['LOOKBACK_WINDOW'],
+            forecast_window=GLOBAL_CONFIG['FORECAST_WINDOW'],
+            batch_size=1,
+            predictor=QuantumNeuralNetwork,
+            num_weights=60,
+            encoding='angle',
+            input_transformation=pca_transform,
+            rotation_axes='y',
+            short_selling=GLOBAL_CONFIG['SHORT_SELLING'],
+            reduce_negatives=GLOBAL_CONFIG['CLAMP_NEGATIVES'],
+            verbose=GLOBAL_CONFIG['VERBOSE'],
+            seed=GLOBAL_CONFIG['SEED'],
+        )
+        model.train(
+            train_data=train_data,
+            val_data=val_data,
+            actor_lr=0.09935741130315447,
+            critic_lr=0.0018039893844072358,
+            optimizer=torch.optim.SGD,
+            l2_lambda=3.2067524338595386e-06,
+            soft_update=False,
             risk_preference=-0.9286138365176491,
             gamma=0.009826640813865617,
             num_epochs=50,

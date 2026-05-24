@@ -10,7 +10,9 @@ Methods:
     radial_to_linear: Transforms data using direct Cartesian feature augmentations
         to escape radial patterns.
 '''
+import numpy as np
 import torch
+from sklearn.decomposition import PCA
 
 
 def min_max_scale_to_range(
@@ -131,3 +133,58 @@ def radial_to_linear_small(
     ], dim=-1)  # Concatenate along the feature dimension
 
     return transformed_data
+
+
+class PCATransform:
+    '''Stateful PCA-based dimensionality reduction for use as an input
+    transformation in QuantumNeuralNetwork.
+
+    Must be fit with .fit() before use. Dimension-aware: if the input tensor
+    is wider than the PCA fitting dimension (e.g. the critic's state+action
+    input), only the first n_features_in_ values are PCA-reduced and the
+    remainder are passed through unchanged. This allows the same transform
+    object to be safely shared between actor and critic in a DDPG pipeline.
+
+    Args:
+        n_components (int): Number of principal components to retain.
+    '''
+
+    def __init__(self, n_components: int):
+        self.__name__ = 'PCATransform'
+        self.n_components = n_components
+        self.pca = PCA(n_components=n_components)
+
+    def fit(self, X: np.ndarray) -> None:
+        '''Fits PCA on X (shape [n_samples, n_features]).'''
+        self.pca.fit(X)
+
+    def __call__(self, tensor: torch.Tensor) -> torch.Tensor:
+        '''Applies PCA transform to a 1-D or 2-D input tensor.
+
+        If tensor width > pca.n_features_in_, splits into a PCA-reduced
+        state portion and a pass-through remainder, then concatenates.
+
+        Args:
+            tensor (torch.Tensor): Shape [n_features] or [batch, n_features].
+
+        Returns:
+            torch.Tensor: Same dtype as input, width = n_components +
+                max(0, input_width - pca.n_features_in_).
+        '''
+        original_dtype = tensor.dtype
+        pca_width = self.pca.n_features_in_
+
+        if tensor.shape[-1] > pca_width:
+            state_part = tensor[..., :pca_width]
+            action_part = tensor[..., pca_width:]
+            return torch.cat([self._transform(state_part, original_dtype), action_part], dim=-1)
+
+        return self._transform(tensor, original_dtype)
+
+    def _transform(self, tensor: torch.Tensor, dtype: torch.dtype) -> torch.Tensor:
+        was_1d = tensor.ndim == 1
+        if was_1d:
+            tensor = tensor.unsqueeze(0)
+        reduced = self.pca.transform(tensor.detach().numpy().astype(np.float64))
+        result = torch.tensor(reduced, dtype=dtype)
+        return result.squeeze(0) if was_1d else result

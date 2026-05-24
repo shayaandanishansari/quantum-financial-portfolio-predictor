@@ -59,8 +59,10 @@ class AngleEncoding(Operation):
             list[.Operator]: Decomposition of the operator.
         '''
         batched = qml.math.ndim(features) > 1
+        # Capture n_features before transpose so shape[-1] is always n_features.
+        n_features = qml.math.shape(features)[-1]
         features = qml.math.T(features) if batched else features
-        return [rotation(features[i], wires=wires[i]) for i in range(len(wires))]
+        return [rotation(features[i], wires=wires[i]) for i in range(n_features)]
     
 
 class StackedAngleEncoding(Operation):
@@ -307,7 +309,14 @@ class QuantumNeuralNetwork(nn.Module):
             set_seeds(seed)
 
         # Initialize input size
-        if input_transformation == input_transformations.radial_to_linear:
+        if hasattr(input_transformation, 'n_components'):
+            # PCA-like transform: reduces state to n_components; any extra dims
+            # (e.g. the critic's action portion) are passed through unchanged.
+            pca_input_width = getattr(
+                input_transformation.pca, 'n_features_in_', input_size)
+            extra_dims = max(0, input_size - pca_input_width)
+            self.actual_input_size = input_transformation.n_components + extra_dims
+        elif input_transformation == input_transformations.radial_to_linear:
             self.actual_input_size = input_size * 4
         elif input_transformation == input_transformations.radial_to_linear_small:
             self.actual_input_size = input_size * 2
