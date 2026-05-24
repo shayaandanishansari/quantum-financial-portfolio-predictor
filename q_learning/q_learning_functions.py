@@ -4,6 +4,7 @@ import torch.nn as nn
 import predictors
 
 from copy import deepcopy
+from typing import Type
 
 from utilities.data_processing import RLDataLoader
 from utilities.metrics import RLEvaluator
@@ -32,7 +33,7 @@ class DeepQLearning:
     def __init__(
         self,
         lookback_window: int,
-        predictor: predictors,
+        predictor: Type,
         batch_size: int = 1,
         short_selling: bool = False,
         forecast_window: int = 0,

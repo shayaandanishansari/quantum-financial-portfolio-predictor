@@ -7,6 +7,7 @@ import torch.nn as nn
 import predictors
 
 from copy import deepcopy
+from typing import Type
 
 from utilities.data_processing import RLDataLoader
 from utilities.metrics import RLEvaluator
@@ -35,7 +36,7 @@ class DDPG:
     def __init__(
         self,
         lookback_window: int,
-        predictor: predictors,
+        predictor: Type,
         batch_size: int = 1,
         short_selling: bool = False,
         forecast_window: int = 0,
@@ -394,6 +395,7 @@ class DDPGTrainer:
                 # Actor backpropagation
                 self.actor_optimizer.zero_grad()
                 actor_loss.backward()
+                torch.nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1.0)
                 self.actor_optimizer.step()
 
                 total_actor_loss += actor_loss.item()

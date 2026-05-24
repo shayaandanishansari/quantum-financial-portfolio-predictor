@@ -66,10 +66,10 @@ def print_results(cv_results, dpo: bool):
         dpo (bool): Whether to print DPO results.
     '''
 
-    average = np.mean(cv_results, axis=0)
+    average = np.nanmean(cv_results, axis=0)
     std = (np.nanpercentile(cv_results, 75, axis=0) - np.nanpercentile(cv_results, 25, axis=0))
-    min = np.min(cv_results, axis=0)
-    max = np.max(cv_results, axis=0)
+    min = np.nanmin(cv_results, axis=0)
+    max = np.nanmax(cv_results, axis=0)
 
     if dpo:
         return f'''Results:
