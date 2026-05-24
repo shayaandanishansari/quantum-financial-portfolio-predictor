@@ -1,4 +1,4 @@
-r
+
 -----------------------------------------------------------------------------
 
                      PORTFOLIO OPTIMIZATION RESULTS LOG                      
@@ -22,20 +22,5 @@ Config:
 
 -----------------------------------------------------------------------------
 Quantum Deterministic Policy Gradient (Angle Encoding + PCA)
------------------------------------------------------------------------------
-
-Execution time: 7 hours, 36 minutes and 12.48 seconds
-
-Results:
-    
-Average Profit p.a. (SPO):	nan % (std: 16.1123, min: nan, max: nan)
-Average Sharpe Ratio (SPO):	nan (std: 0.6108, min: nan, max: nan)
-
-Average Profit p.a. (DPO):	nan % (std: 14.6988, min: nan, max: nan)
-Average Sharpe Ratio (DPO):	nan (std: 0.6105, min: nan, max: nan)
-
-
------------------------------------------------------------------------------
-Quantum Deterministic Policy Gradient
 -----------------------------------------------------------------------------
 

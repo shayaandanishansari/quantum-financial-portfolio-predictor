@@ -117,7 +117,7 @@ class DDPG:
 
         # initialize models
         if self.short_selling:
-            activation = lambda x: x / torch.sum(x, dim=-1, keepdim=True)
+            activation = lambda x: x / (torch.sum(x, dim=-1, keepdim=True) + 1e-8)
         else:
             activation = nn.Softmax(dim=-1)
         self.actor = self.predictor(

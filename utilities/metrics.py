@@ -234,5 +234,5 @@ def reduce_negatives(vec: np.ndarray, clamp_min: float = -1.0) -> np.ndarray:
         np.ndarray: Adjusted vector (sums to 1) with reduced large negatives.
     '''
     clamped = np.maximum(vec, clamp_min)
-    adjusted = clamped / np.sum(clamped)
+    adjusted = clamped / (np.sum(clamped) + 1e-8)
     return adjusted
