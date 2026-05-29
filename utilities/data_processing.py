@@ -244,6 +244,8 @@ def arima_forecast(values, forecast_size):
 
         # Extract forecasted values as a NumPy array
         forecast_values = forecast['AutoARIMA'].values.reshape(-1, 1)
+        if np.isnan(forecast_values).any():
+            forecast_values = np.full((forecast_size, 1), values[-1, col])
         forecasts.append(forecast_values)
 
     # Stack all forecasts horizontally

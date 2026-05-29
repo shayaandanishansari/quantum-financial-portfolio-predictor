@@ -24,22 +24,22 @@ Config:
 Quantum Deterministic Policy Gradient (Angle Encoding + PCA)
 -----------------------------------------------------------------------------
 
-Execution time: 18 minutes and 39.88 seconds
+Execution time: 7 minutes and 10.8 seconds
 
 Results:
     
-Average Profit p.a. (SPO):	15.3625 % (std: 3.0701, min: 12.6787, max: 18.8188)
-Average Sharpe Ratio (SPO):	0.6549 (std: 0.2358, min: 0.4495, max: 0.9211)
+Average Profit p.a. (SPO):	20.7325 % (std: 7.9129, min: 13.0641, max: 28.8899)
+Average Sharpe Ratio (SPO):	0.8359 (std: 0.4672, min: 0.4621, max: 1.3966)
 
-Average Profit p.a. (DPO):	13.2288 % (std: 7.6187, min: 7.2521, max: 22.4896)
-Average Sharpe Ratio (DPO):	0.3823 (std: 0.2126, min: 0.2036, max: 0.6288)
+Average Profit p.a. (DPO):	11.7146 % (std: 10.1776, min: 2.6014, max: 22.9566)
+Average Sharpe Ratio (DPO):	0.2922 (std: 0.3870, min: -0.1023, max: 0.6717)
 
 
 -----------------------------------------------------------------------------
 Quantum Deterministic Policy Gradient
 -----------------------------------------------------------------------------
 
-Execution time: 1 hour, 10 minutes and 57.1 seconds
+Execution time: 52 minutes and 19.59 seconds
 
 Results:
     
@@ -81,22 +81,22 @@ Average Sharpe Ratio (DPO):	0.5926 (std: 0.3572, min: 0.1908, max: 0.9051)
 Deep Deterministic Policy Gradient
 -----------------------------------------------------------------------------
 
-Execution time: 10.48 seconds
+Execution time: 11.56 seconds
 
 Results:
     
-Average Profit p.a. (SPO):	nan % (std: nan, min: nan, max: nan)
-Average Sharpe Ratio (SPO):	nan (std: nan, min: nan, max: nan)
+Average Profit p.a. (SPO):	0.8186 % (std: 12.6730, min: -9.5451, max: 15.8010)
+Average Sharpe Ratio (SPO):	-0.0347 (std: 0.5771, min: -0.4801, max: 0.6741)
 
-Average Profit p.a. (DPO):	nan % (std: nan, min: nan, max: nan)
-Average Sharpe Ratio (DPO):	nan (std: nan, min: nan, max: nan)
+Average Profit p.a. (DPO):	0.9436 % (std: 12.7149, min: -9.5791, max: 15.8507)
+Average Sharpe Ratio (DPO):	-0.0334 (std: 0.5780, min: -0.4858, max: 0.6703)
 
 
 -----------------------------------------------------------------------------
 Deep Q-Learning
 -----------------------------------------------------------------------------
 
-Execution time: 31.69 seconds
+Execution time: 32.51 seconds
 
 Results:
     
@@ -110,14 +110,4 @@ Average Sharpe Ratio (DPO):	0.3811 (std: 0.3883, min: -0.0077, max: 0.7689)
 -----------------------------------------------------------------------------
 Quantum Q-Learning
 -----------------------------------------------------------------------------
-
-Execution time: 1 hour, 20 minutes and 39.13 seconds
-
-Results:
-    
-Average Profit p.a. (SPO):	4.6973 % (std: 14.3168, min: -11.1202, max: 17.5134)
-Average Sharpe Ratio (SPO):	0.0546 (std: 0.8728, min: -0.8647, max: 0.8809)
-
-Average Profit p.a. (DPO):	2.3616 % (std: 3.7732, min: -2.5117, max: 5.0346)
-Average Sharpe Ratio (DPO):	-0.1291 (std: 0.2277, min: -0.4285, max: 0.0269)
 

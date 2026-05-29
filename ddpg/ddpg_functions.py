@@ -379,6 +379,7 @@ class DDPGTrainer:
                 critic_loss = (target_q_value - q_value).pow(2).mean()
                 self.critic_optimizer.zero_grad()
                 critic_loss.backward(retain_graph=True)
+                torch.nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=1.0)
                 self.critic_optimizer.step()
 
                 # Actor loss (maximise Q-value)

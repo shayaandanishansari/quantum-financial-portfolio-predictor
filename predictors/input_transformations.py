@@ -78,7 +78,7 @@ def standardize(X: torch.Tensor, dof: int = 0) -> torch.Tensor:
     '''
     mean = torch.mean(X, dim=0)
     std = torch.std(X, dim=0, correction=dof)
-    return (X - mean) / std
+    return (X - mean) / (std + 1e-8)
 
 
 def radial_to_linear(
