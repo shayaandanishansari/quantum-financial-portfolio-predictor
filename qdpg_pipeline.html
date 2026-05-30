@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QDPG Encoding Pipeline</title>
+<style>
+  :root {
+    --bg:        #f5f4f0;
+    --surface:   #ffffff;
+    --border:    #dddbd4;
+    --accent-a:  #5b4fcf;
+    --accent-b:  #1a9090;
+    --text:      #1e1e2e;
+    --muted:     #6b6b80;
+    --code-bg:   #f0ede8;
+    --tag-a:     rgba(91,79,207,0.10);
+    --tag-b:     rgba(26,144,144,0.10);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    padding: 40px 20px 80px;
+  }
+
+  .page { max-width: 1000px; margin: 0 auto; }
+
+  /* ── Header ── */
+  header { margin-bottom: 48px; }
+  header h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+  header p { color: var(--muted); margin-top: 8px; font-size: 0.95rem; }
+
+  /* ── Section titles ── */
+  h2 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin: 48px 0 20px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin: 24px 0 10px;
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+    margin-bottom: 16px;
+  }
+
+  /* ── Path columns ── */
+  .paths {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  @media (max-width: 680px) { .paths { grid-template-columns: 1fr; } }
+
+  .path-angle  { border-top: 3px solid var(--accent-a); }
+  .path-amp    { border-top: 3px solid var(--accent-b); }
+
+  .path-label {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 10px;
+    border-radius: 4px;
+    margin-bottom: 14px;
+  }
+  .label-angle { background: var(--tag-a); color: var(--accent-a); }
+  .label-amp   { background: var(--tag-b); color: var(--accent-b); }
+
+  /* ── Steps ── */
+  .step {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 18px;
+    align-items: flex-start;
+  }
+  .step-num {
+    flex-shrink: 0;
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    font-size: 0.75rem;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px;
+  }
+  .num-angle { background: var(--tag-a);  color: var(--accent-a); }
+  .num-amp   { background: var(--tag-b);  color: var(--accent-b); }
+  .num-shared { background: rgba(255,255,255,0.06); color: var(--muted); }
+
+  .step-body { flex: 1; }
+  .step-title { font-weight: 600; margin-bottom: 4px; }
+  .step-desc  { color: var(--muted); font-size: 0.875rem; }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.65;
+    margin: 12px 0;
+    color: #1e1e2e;
+  }
+
+  .kw   { color: #5b4fcf; }
+  .fn   { color: #0070a8; }
+  .str  { color: #2a7a2a; }
+  .num  { color: #b45309; }
+  .cm   { color: #9a9aaa; font-style: italic; }
+  .op   { color: #c2185b; }
+
+  /* ── File ref chips ── */
+  .file-ref {
+    display: inline-block;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 8px;
+    color: var(--muted);
+    margin: 2px 2px;
+    white-space: nowrap;
+  }
+
+  /* ── Pipeline diagram ── */
+  .diagram {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 28px 28px;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.82rem;
+    line-height: 1.9;
+    overflow-x: auto;
+  }
+  .d-shared { color: var(--text); }
+  .d-angle  { color: var(--accent-a); }
+  .d-amp    { color: var(--accent-b); }
+  .d-muted  { color: var(--muted); }
+  .d-label  { font-weight: 700; }
+
+  /* ── Comparison table ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  th {
+    text-align: left;
+    padding: 10px 16px;
+    color: var(--muted);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { color: var(--muted); font-size: 0.875rem; }
+  .td-angle { color: var(--accent-a); font-weight: 500; }
+  .td-amp   { color: var(--accent-b); font-weight: 500; }
+
+  /* ── File index ── */
+  .file-table { width: 100%; font-size: 0.875rem; border-collapse: collapse; }
+  .file-table td { padding: 9px 12px; border-bottom: 1px solid var(--border); }
+  .file-table tr:last-child td { border-bottom: none; }
+  .file-table td:first-child {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.78rem;
+    color: var(--accent-b);
+    white-space: nowrap;
+    padding-right: 24px;
+  }
+  .file-table td:last-child { color: var(--muted); }
+
+  /* ── Callout ── */
+  .callout {
+    background: rgba(124,106,245,0.07);
+    border-left: 3px solid var(--accent-a);
+    border-radius: 0 7px 7px 0;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+  .callout.teal {
+    background: rgba(63,191,191,0.07);
+    border-left-color: var(--accent-b);
+  }
+  .callout strong { color: #fff; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ═══════════════════════════════════════════════════════ HEADER -->
+  <header>
+    <h1>QDPG Encoding Pipeline</h1>
+    <p>Exact data path from raw price input to quantum circuit output &mdash; Angle Encoding vs. Amplitude Encoding</p>
+  </header>
+
+
+  <!-- ═══════════════════════════════════════════════════════ SHARED ENTRY -->
+  <h2>Shared Entry Point</h2>
+  <div class="card">
+    <div class="step">
+      <div class="step-num num-shared">1</div>
+      <div class="step-body">
+        <div class="step-title">Load log-returns</div>
+        <div class="step-desc">Raw price data read from parquet. Already stored as log-returns (pre-computed in <code>get_data.py</code>, <code>fillna(0)</code> applied).</div>
+        <span class="file-ref">MAIN.py:119</span>
+        <pre><span class="kw">price_data</span> = pd.read_parquet(<span class="str">'./data/price_data.parquet.gzip'</span>)</pre>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num num-shared">2</div>
+      <div class="step-body">
+        <div class="step-title">Time-series cross-validation split</div>
+        <div class="step-desc">Each CV fold produces <code>train_data</code>, <code>val_data</code>, <code>test_data</code>. No shuffling — temporal order preserved.</div>
+        <span class="file-ref">MAIN.py:122–148</span>
+      </div>
+    </div>
+    <div class="step">
+      <div class="step-num num-shared">3</div>
+      <div class="step-body">
+        <div class="step-title">Window extraction &amp; flattening (per batch)</div>
+        <div class="step-desc">Training loop extracts rolling windows then flattens before the actor forward pass.</div>
+        <span class="file-ref">ddpg_functions.py</span>
+        <pre><span class="cm"># shape: (batch, window_size, n_assets)  →  flatten  →  (batch, window_size × n_assets)</span>
+state_flat = state.view(b, <span class="op">-</span><span class="num">1</span>)</pre>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════ TWO PATHS -->
+  <h2>Two Encoding Paths</h2>
+  <div class="paths">
+
+    <!-- ── ANGLE ── -->
+    <div class="card path-angle">
+      <span class="path-label label-angle">Path A &mdash; Angle Encoding</span>
+
+      <div class="step">
+        <div class="step-num num-angle">1</div>
+        <div class="step-body">
+          <div class="step-title">Offline PCA fit (before training)</div>
+          <div class="step-desc">Flat windows are built from the training partition and used to fit <code>PCAWithNormalization</code>.</div>
+          <span class="file-ref">MAIN.py:153–158</span>
+          <pre><span class="kw">training_windows</span> = np.array([
+  train_data.iloc[i:i+window_size].values.flatten()
+  <span class="kw">for</span> i <span class="kw">in</span> range(len(train_data) <span class="op">-</span> window_size)
+])  <span class="cm"># shape: (n_windows, window_size × n_assets)</span>
+
+pca = <span class="fn">PCAWithNormalization</span>(n_components=len(tickers))
+pca.<span class="fn">fit</span>(training_windows)</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num num-angle">2</div>
+        <div class="step-body">
+          <div class="step-title">QNN configuration</div>
+          <span class="file-ref">MAIN.py:160–176</span>  <span class="file-ref">quantum_neural_network.py:315–325</span>
+          <pre>encoding              = <span class="str">'angle'</span>
+input_transformation  = pca           <span class="cm"># fitted PCAWithNormalization</span>
+transformed_input_size = len(tickers) <span class="cm"># e.g. 15</span>
+num_weights           = <span class="num">30</span>
+rotation_axes         = <span class="str">'y'</span>
+
+<span class="cm"># → derived inside QNN __init__:</span>
+actual_input_size = len(tickers)
+num_qubits        = max(actual_input_size, output_size)
+                  = len(tickers)</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num num-angle">3</div>
+        <div class="step-body">
+          <div class="step-title">Forward: PCAWithNormalization</div>
+          <span class="file-ref">input_transformations.py:168–174</span>
+          <pre><span class="cm"># Input: (batch, window_size × n_assets)</span>
+
+<span class="cm"># A) PCA projection</span>
+out = pca._pca.<span class="fn">transform</span>(tensor)
+<span class="cm"># → (batch, n_assets)</span>
+
+<span class="cm"># B) Per-sample min-max  →  [-1, 1]</span>
+min_val    = out.<span class="fn">min</span>(dim=<span class="op">-</span><span class="num">1</span>, keepdim=<span class="kw">True</span>).values
+max_val    = out.<span class="fn">max</span>(dim=<span class="op">-</span><span class="num">1</span>, keepdim=<span class="kw">True</span>).values
+normalized = <span class="num">2</span> <span class="op">*</span> (out <span class="op">-</span> min_val) <span class="op">/</span> (max_val <span class="op">-</span> min_val <span class="op">+</span> <span class="num">1e-8</span>) <span class="op">-</span> <span class="num">1</span>
+
+<span class="cm"># C) arcsin  →  [-π/2, π/2]   ← valid rotation angles</span>
+<span class="kw">return</span> torch.<span class="fn">arcsin</span>(normalized.<span class="fn">clamp</span>(<span class="op">-</span><span class="num">1</span><span class="op">+</span><span class="num">1e-6</span>, <span class="num">1</span><span class="op">-</span><span class="num">1e-6</span>))
+<span class="cm"># → (batch, n_assets)  values in [-π/2, π/2]</span></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num num-angle">4</div>
+        <div class="step-body">
+          <div class="step-title">AngleEncoding — one rotation gate per qubit</div>
+          <span class="file-ref">quantum_neural_network.py:50–63</span>
+          <pre><span class="kw">for</span> i <span class="kw">in</span> range(n_assets):
+    qml.<span class="fn">RY</span>(features[i], wires=i)
+
+<span class="cm"># Each qubit i starts in |0⟩ and is rotated by features[i]</span>
+<span class="cm"># State of qubit i after encoding:</span>
+<span class="cm">#   cos(θ/2)|0⟩ + sin(θ/2)|1⟩   where θ = features[i]</span></pre>
+        </div>
+      </div>
+    </div><!-- /angle card -->
+
+
+    <!-- ── AMPLITUDE ── -->
+    <div class="card path-amp">
+      <span class="path-label label-amp">Path B &mdash; Amplitude Encoding</span>
+
+      <div class="step">
+        <div class="step-num num-amp">1</div>
+        <div class="step-body">
+          <div class="step-title">No offline fitting</div>
+          <div class="step-desc"><code>radial_to_linear</code> is a pure stateless function — no fitting step required before training begins.</div>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num num-amp">2</div>
+        <div class="step-body">
+          <div class="step-title">QNN configuration</div>
+          <span class="file-ref">MAIN.py:220–233</span>  <span class="file-ref">quantum_neural_network.py:311–327</span>
+          <pre>encoding             = <span class="str">'amplitude'</span>
+input_transformation = radial_to_linear   <span class="cm"># stateless fn</span>
+num_weights          = <span class="num">60</span>
+rotation_axes        = <span class="str">'y'</span>
+
+<span class="cm"># → derived inside QNN __init__:</span>
+actual_input_size = window_size <span class="op">×</span> n_assets <span class="op">×</span> <span class="num">4</span>
+num_qubits        = max(ceil(log2(actual_input_size)),
+                        output_size)</pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num num-amp">3</div>
+        <div class="step-body">
+          <div class="step-title">Forward: radial_to_linear</div>
+          <span class="file-ref">input_transformations.py:84–109</span>
+          <pre><span class="cm"># Input: (batch, window_size × n_assets)</span>
+
+<span class="cm"># A) Z-score standardize</span>
+mean = X.<span class="fn">mean</span>(dim=<span class="num">0</span>)
+std  = X.<span class="fn">std</span>(dim=<span class="num">0</span>)
+X    = (X <span class="op">-</span> mean) <span class="op">/</span> (std <span class="op">+</span> <span class="num">1e-8</span>)
+
+<span class="cm"># B) 4× feature expansion  (breaks radial symmetry)</span>
+output = torch.<span class="fn">cat</span>([
+    X,               <span class="cm"># original</span>
+    X<span class="op">**</span><span class="num">2</span>,            <span class="cm"># quadratic</span>
+    torch.<span class="fn">sin</span>(X),   <span class="cm"># sinusoidal</span>
+    torch.<span class="fn">cos</span>(X),   <span class="cm"># cosine</span>
+], dim=<span class="op">-</span><span class="num">1</span>)
+<span class="cm"># → (batch, 4 × window_size × n_assets)</span></pre>
+        </div>
+      </div>
+
+      <div class="step">
+        <div class="step-num num-amp">4</div>
+        <div class="step-body">
+          <div class="step-title">AmplitudeEncoding — feature vector as state amplitudes</div>
+          <span class="file-ref">quantum_neural_network.py:121–158</span>
+          <pre><span class="cm"># Pad to length 2^num_qubits  (with zeros)</span>
+<span class="cm"># Normalize:  v_norm = v / ‖v‖</span>
+<span class="cm"># StatePrep encodes into quantum state:</span>
+
+|ψ⟩ = Σᵢ v_norm[i] |i⟩
+
+<span class="cm"># The entire feature vector becomes the</span>
+<span class="cm"># probability amplitude distribution.</span>
+<span class="cm"># 2^num_qubits amplitudes encoded simultaneously.</span></pre>
+        </div>
+      </div>
+    </div><!-- /amplitude card -->
+  </div><!-- /paths -->
+
+
+  <!-- ═══════════════════════════════════════════════════════ SHARED ANSATZ -->
+  <h2>Shared: Ansatz + Measurement</h2>
+  <div class="card">
+    <h3>Parameterized Quantum Circuit (ansatz)</h3>
+    <span class="file-ref">quantum_neural_network.py:198–220</span>
+    <pre><span class="kw">for</span> i, param <span class="kw">in</span> <span class="fn">enumerate</span>(weights):     <span class="cm"># num_weights = 30 (angle) or 60 (amplitude)</span>
+    qml.<span class="fn">RY</span>(param, wires=i <span class="op">%</span> num_qubits)  <span class="cm"># rotation_axes='y' → only RY gates</span>
+
+    <span class="cm"># After each complete pass through all qubits:</span>
+    <span class="kw">if</span> (i<span class="op">+</span><span class="num">1</span>) <span class="op">%</span> num_qubits <span class="op">==</span> <span class="num">0</span>:
+        <span class="kw">for</span> j <span class="kw">in</span> range(num_qubits<span class="op">-</span><span class="num">1</span>, <span class="num">0</span>, <span class="op">-</span><span class="num">1</span>):   <span class="cm"># reverse_linear entanglement</span>
+            qml.<span class="fn">CNOT</span>(wires=[j<span class="op">-</span><span class="num">1</span>, j])</pre>
+
+    <h3>Measurement</h3>
+    <span class="file-ref">quantum_neural_network.py:371–375</span>
+    <pre><span class="kw">return</span> [qml.<span class="fn">expval</span>(qml.<span class="fn">PauliZ</span>(i)) <span class="kw">for</span> i <span class="kw">in</span> range(output_size)]
+<span class="cm"># ⟨Z⟩ per qubit  →  values in [-1, 1]
+# Output shape: (batch, n_assets)</span></pre>
+
+    <h3>Post-circuit</h3>
+    <span class="file-ref">quantum_neural_network.py:431–432</span>
+    <pre>output = <span class="fn">Softmax</span>(quantum_output)
+<span class="cm"># → portfolio weights summing to 1
+# Output shape: (batch, n_assets)</span></pre>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════ FULL DIAGRAM -->
+  <h2>Full Pipeline Diagram</h2>
+  <div class="diagram">
+<span class="d-shared">Raw price data (log-returns DataFrame)</span>
+<span class="d-muted">    │</span>
+<span class="d-muted">    ├─ </span><span class="d-angle d-label">[PATH A — Angle Encoding] ─────────────────────────────────</span>
+<span class="d-muted">    │</span>
+<span class="d-muted">    │  </span><span class="d-angle">MAIN.py:153–158  →  build flat training windows, fit PCAWithNormalization</span>
+<span class="d-muted">    │</span>
+<span class="d-muted">    │  </span><span class="d-shared">Forward pass input:  (batch, window_size × n_assets)</span>
+<span class="d-muted">    │       ↓</span>
+<span class="d-angle">    │  PCAWithNormalization  [input_transformations.py:168–174]</span>
+<span class="d-angle">    │    A) sklearn PCA.transform           →  (batch, n_assets)</span>
+<span class="d-angle">    │    B) per-sample min-max              →  [-1, 1]</span>
+<span class="d-angle">    │    C) arcsin                          →  [-π/2, π/2]</span>
+<span class="d-muted">    │       ↓</span>
+<span class="d-angle">    │  AngleEncoding  [quantum_neural_network.py:50–63]</span>
+<span class="d-angle">    │    qml.RY(features[i], wires=i)  for i in range(n_assets)</span>
+<span class="d-angle">    │    → each qubit i rotated by features[i] around Y-axis</span>
+<span class="d-muted">    │</span>
+<span class="d-muted">    └─ </span><span class="d-amp d-label">[PATH B — Amplitude Encoding] ─────────────────────────────</span>
+<span class="d-muted">    </span>
+<span class="d-shared">       Forward pass input:  (batch, window_size × n_assets)</span>
+<span class="d-muted">            ↓</span>
+<span class="d-amp">       radial_to_linear  [input_transformations.py:84–109]</span>
+<span class="d-amp">         A) z-score standardize</span>
+<span class="d-amp">         B) cat([X, X², sin(X), cos(X)])   →  (batch, 4 × window_size × n_assets)</span>
+<span class="d-muted">            ↓</span>
+<span class="d-amp">       AmplitudeEncoding  [quantum_neural_network.py:360–366]</span>
+<span class="d-amp">         pad to 2^num_qubits, normalize, StatePrep</span>
+<span class="d-amp">         → |ψ⟩ = Σᵢ v_norm[i] |i⟩</span>
+
+<span class="d-muted">    ═══════════════════════ both paths below ════════════════════════</span>
+<span class="d-muted">            ↓</span>
+<span class="d-shared">    ParameterizedQuantumCircuit  [quantum_neural_network.py:198–220]</span>
+<span class="d-shared">      for each weight w:   RY(w, qubit i % n)</span>
+<span class="d-shared">      after each full pass: CNOT chain  [n−1 → n−2 → … → 0]</span>
+<span class="d-muted">            ↓</span>
+<span class="d-shared">    Measurement: qml.expval(PauliZ(i)) for i in range(n_assets)</span>
+<span class="d-shared">      → ⟨Z⟩ per qubit  ∈ [-1, 1]   shape: (batch, n_assets)</span>
+<span class="d-muted">            ↓</span>
+<span class="d-shared">    Softmax activation</span>
+<span class="d-shared">      → portfolio weights summing to 1   shape: (batch, n_assets)</span>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════ COMPARISON -->
+  <h2>Side-by-Side Comparison</h2>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table>
+      <thead>
+        <tr>
+          <th>Property</th>
+          <th>Angle Encoding</th>
+          <th>Amplitude Encoding</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Input transform</td>
+          <td class="td-angle">PCAWithNormalization (stateful, fitted)</td>
+          <td class="td-amp">radial_to_linear (stateless)</td>
+        </tr>
+        <tr>
+          <td>Preprocessing output shape</td>
+          <td class="td-angle">(batch, n_assets)</td>
+          <td class="td-amp">(batch, 4 × window × n_assets)</td>
+        </tr>
+        <tr>
+          <td>What the circuit encodes</td>
+          <td class="td-angle">One feature = one rotation angle per qubit</td>
+          <td class="td-amp">Entire feature vector as quantum state amplitudes</td>
+        </tr>
+        <tr>
+          <td>num_qubits</td>
+          <td class="td-angle">= n_assets (e.g. 15)</td>
+          <td class="td-amp">= ceil(log₂(4 × window × n_assets))</td>
+        </tr>
+        <tr>
+          <td>num_weights</td>
+          <td class="td-angle">30</td>
+          <td class="td-amp">60</td>
+        </tr>
+        <tr>
+          <td>Hilbert space used</td>
+          <td class="td-angle">n qubits → n angles encoded</td>
+          <td class="td-amp">2ⁿ amplitudes encoded simultaneously</td>
+        </tr>
+        <tr>
+          <td>Rotation gate</td>
+          <td class="td-angle">qml.RY (rotation_axes='y')</td>
+          <td class="td-amp">qml.RY (rotation_axes='y')</td>
+        </tr>
+        <tr>
+          <td>Entanglement</td>
+          <td class="td-angle">reverse_linear CNOT chain</td>
+          <td class="td-amp">reverse_linear CNOT chain</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════ CALLOUTS -->
+  <h2>Key Design Decisions</h2>
+
+  <div class="callout">
+    <strong>Why arcsin in angle encoding?</strong><br>
+    PCA output is unbounded. The min-max + arcsin pipeline in <code>PCAWithNormalization</code>
+    bounds every value to <strong>[-π/2, π/2]</strong> — the valid half-turn range for an RY gate —
+    so no angle ever causes a qubit to wrap around the Bloch sphere unpredictably.
+  </div>
+
+  <div class="callout teal">
+    <strong>Why radial_to_linear for amplitude encoding?</strong><br>
+    If a purely linear feature set lies on a hypersphere in Hilbert space, all inputs
+    live on a thin manifold and the circuit sees little variation in amplitudes.
+    Concatenating <code>[X, X², sin(X), cos(X)]</code> breaks that radial symmetry,
+    spreading features across a richer non-radial subspace before normalization encodes
+    them as state amplitudes.
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════════════ FILE INDEX -->
+  <h2>Key Files</h2>
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="file-table">
+      <tbody>
+        <tr><td>MAIN.py:132–259</td><td>Top-level config, PCA fitting, model instantiation, CV loop</td></tr>
+        <tr><td>predictors/input_transformations.py:84–109</td><td><code>radial_to_linear</code> — stateless 4× feature expansion</td></tr>
+        <tr><td>predictors/input_transformations.py:149–174</td><td><code>PCAWithNormalization</code> — PCA + min-max + arcsin</td></tr>
+        <tr><td>predictors/quantum_neural_network.py:26–63</td><td><code>AngleEncoding</code> — one RY gate per qubit</td></tr>
+        <tr><td>predictors/quantum_neural_network.py:121–158</td><td><code>AmplitudeEncoding</code> — wraps PennyLane StatePrep</td></tr>
+        <tr><td>predictors/quantum_neural_network.py:161–221</td><td><code>ParameterizedQuantumCircuit</code> — ansatz (RY + CNOT)</td></tr>
+        <tr><td>predictors/quantum_neural_network.py:261–387</td><td><code>QuantumNeuralNetwork.__init__</code> — qnode definition &amp; TorchLayer</td></tr>
+        <tr><td>predictors/quantum_neural_network.py:409–433</td><td><code>QuantumNeuralNetwork.forward</code> — transform → circuit → softmax</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div><!-- /page -->
+</body>
+</html>

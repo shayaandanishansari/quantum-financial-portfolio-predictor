@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Why the Current Encoding Comparison is Broken</title>
+<style>
+  :root {
+    --bg:       #f5f4f0;
+    --surface:  #ffffff;
+    --border:   #dddbd4;
+    --accent-a: #5b4fcf;
+    --accent-b: #1a9090;
+    --text:     #1e1e2e;
+    --muted:    #6b6b80;
+    --code-bg:  #f0ede8;
+    --tag-a:    rgba(91,79,207,0.10);
+    --tag-b:    rgba(26,144,144,0.10);
+    --warn:     rgba(217,119,6,0.10);
+    --warn-border: #d97706;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Georgia, system-ui, serif;
+    font-size: 16px;
+    line-height: 1.8;
+    padding: 48px 20px 100px;
+  }
+
+  .page {
+    max-width: 780px;
+    margin: 0 auto;
+  }
+
+  /* ── Header ── */
+  header { margin-bottom: 56px; border-bottom: 2px solid var(--border); padding-bottom: 32px; }
+
+  .kicker {
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--accent-a);
+    margin-bottom: 12px;
+  }
+
+  header h1 {
+    font-size: 2.1rem;
+    font-weight: 700;
+    line-height: 1.25;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin-bottom: 16px;
+  }
+
+  .subtitle {
+    font-size: 1.05rem;
+    color: var(--muted);
+    line-height: 1.65;
+  }
+
+  /* ── Section headings ── */
+  h2 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--text);
+    margin: 52px 0 16px;
+    letter-spacing: -0.2px;
+  }
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin: 32px 0 10px;
+  }
+
+  /* ── Body text ── */
+  p { margin-bottom: 18px; }
+
+  p + p { margin-top: -4px; }
+
+  strong { font-weight: 700; color: var(--text); }
+
+  /* ── Inline code ── */
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85em;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 1px 6px;
+    color: var(--accent-a);
+  }
+
+  /* ── Block code ── */
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 18px 20px;
+    overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    margin: 20px 0;
+    color: #1e1e2e;
+  }
+
+  .cm  { color: #9a9aaa; font-style: italic; }
+  .hl  { color: var(--accent-a); font-weight: 600; }
+  .hl2 { color: var(--accent-b); font-weight: 600; }
+  .dim { color: #bbb; }
+
+  /* ── Callouts ── */
+  .callout {
+    border-left: 3px solid var(--accent-a);
+    background: var(--tag-a);
+    border-radius: 0 8px 8px 0;
+    padding: 16px 20px;
+    margin: 28px 0;
+    font-size: 0.95rem;
+  }
+  .callout.teal {
+    border-left-color: var(--accent-b);
+    background: var(--tag-b);
+  }
+  .callout.warn {
+    border-left-color: var(--warn-border);
+    background: var(--warn);
+  }
+  .callout p { margin-bottom: 0; }
+  .callout p + p { margin-top: 10px; }
+
+  /* ── Comparison table ── */
+  .compare {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 28px 0;
+    font-size: 0.9rem;
+  }
+  .compare th {
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+  }
+  .compare td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    line-height: 1.55;
+  }
+  .compare tr:last-child td { border-bottom: none; }
+  .compare td:first-child { color: var(--muted); font-size: 0.875rem; width: 28%; }
+  .td-a { color: var(--accent-a); font-weight: 500; }
+  .td-b { color: var(--accent-b); font-weight: 500; }
+  .td-good { color: #1a7a1a; font-weight: 500; }
+
+  /* ── Divider ── */
+  hr {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 48px 0;
+  }
+
+  /* ── Step list ── */
+  .steps { margin: 24px 0; padding-left: 0; list-style: none; }
+  .steps li {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 18px;
+    align-items: flex-start;
+  }
+  .step-n {
+    flex-shrink: 0;
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--tag-a);
+    color: var(--accent-a);
+    font-size: 0.78rem;
+    font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 2px;
+  }
+  .step-n.teal { background: var(--tag-b); color: var(--accent-b); }
+  .step-body { flex: 1; }
+  .step-body strong { display: block; margin-bottom: 2px; }
+  .step-body span { color: var(--muted); font-size: 0.9rem; }
+
+  /* ── Footer ── */
+  footer {
+    margin-top: 72px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="kicker">QDPG — Encoding Strategy</div>
+    <h1>Why the Current Angle vs. Amplitude Comparison is Broken</h1>
+    <p class="subtitle">
+      The two QDPG variants are not measuring the same thing.
+      This document explains the specific ways they differ, why any performance gap is currently
+      uninterpretable, and what a fair comparison looks like.
+    </p>
+  </header>
+
+
+  <!-- ═══════════════════════════ SECTION 1 -->
+  <h2>The Current Setup</h2>
+
+  <p>
+    Both models take a rolling window of log-returns — 30 days across 15 assets, giving
+    <strong>450 values</strong> per input — and produce a portfolio allocation over those 15 assets.
+    The quantum actor is the differentiating component. Everything else (the DDPG training loop,
+    the critic, the reward function) is shared.
+  </p>
+
+  <p>
+    The two variants are configured as follows:
+  </p>
+
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>Property</th>
+        <th>Angle Encoding</th>
+        <th>Amplitude Encoding</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Preprocessing</td>
+        <td class="td-a">PCAWithNormalization → 15 values</td>
+        <td class="td-b">radial_to_linear → 1,800 values</td>
+      </tr>
+      <tr>
+        <td>Values entering circuit</td>
+        <td class="td-a">15</td>
+        <td class="td-b">1,800</td>
+      </tr>
+      <tr>
+        <td>num_qubits</td>
+        <td class="td-a">15</td>
+        <td class="td-b">~11</td>
+      </tr>
+      <tr>
+        <td>num_weights</td>
+        <td class="td-a">30</td>
+        <td class="td-b">60</td>
+      </tr>
+      <tr>
+        <td>Circuit encoding</td>
+        <td class="td-a">RY(feature[i]) on qubit i, one-to-one</td>
+        <td class="td-b">StatePrep — all values as amplitudes</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <p>
+      <strong>These are not two variants of the same experiment.</strong> They receive different
+      data, processed differently, through circuits of different size and parameter count.
+      Any performance difference between them could come from the encoding strategy, the
+      preprocessing, the qubit count, or the weight budget — there is no way to tell which.
+    </p>
+  </div>
+
+
+  <!-- ═══════════════════════════ SECTION 2 -->
+  <h2>Two Different Lossy Steps</h2>
+
+  <p>
+    A common framing of this comparison is that amplitude encoding is more precise because it
+    encodes more data. This is misleading. Both encodings are lossy — they just lose different
+    information at different points.
+  </p>
+
+  <h3>Angle encoding loses information at preprocessing</h3>
+  <p>
+    PCA compresses the 450-value window down to 15 principal components. This is an irreversible
+    projection. The 435 discarded dimensions are gone before the circuit ever runs. The rotation
+    angles are then mapped faithfully — the circuit encoding itself is exact — but it is operating
+    on an already-impoverished input.
+  </p>
+
+  <h3>Amplitude encoding loses information at the circuit</h3>
+  <p>
+    <code>AmplitudeEncoding</code> wraps PennyLane's <code>StatePrep</code>, which requires a
+    unit-norm state vector. The input is therefore divided by its L2 norm before being loaded
+    into the circuit. This means only the <em>direction</em> of the feature vector is preserved —
+    its magnitude is destroyed. Two windows that are scalar multiples of each other
+    look identical to the circuit.
+  </p>
+
+  <div class="callout">
+    <p>
+      Angle encoding discards variance (PCA). Amplitude encoding discards scale (L2 normalisation).
+      Neither is strictly more precise. They answer different questions about the input.
+    </p>
+  </div>
+
+
+  <!-- ═══════════════════════════ SECTION 3 -->
+  <h2>Why Angle Encoding Cannot Handle the Full Window</h2>
+
+  <p>
+    Standard angle encoding requires <strong>one qubit per feature</strong>. Encoding the full
+    450-value window would need 450 qubits. On a classical statevector simulator, each additional
+    qubit doubles the state dimension: 2<sup>450</sup> complex amplitudes is not a computation
+    that exists in the physical universe. This is why PCA was used — not because it is a good
+    idea, but because it was the only way to make angle encoding tractable.
+  </p>
+
+  <p>
+    Amplitude encoding has no such constraint. It uses
+    <strong>log<sub>2</sub>(n_features) qubits</strong> to encode n_features values. For 450
+    inputs that is ceil(log<sub>2</sub>(450)) = <strong>9 qubits</strong>. For 1,800 inputs
+    (after radial_to_linear) it is 11 qubits. Amplitude encoding is exponentially more
+    data-efficient in terms of qubits, which is one of its theoretical appeals.
+  </p>
+
+  <p>
+    This asymmetry was the root cause of the unfair comparison: angle encoding was constrained
+    to 15 features not by design but by simulation cost.
+  </p>
+
+
+  <!-- ═══════════════════════════ SECTION 4 -->
+  <h2>The Fix: Stacked Angle Encoding</h2>
+
+  <p>
+    <code>StackedAngleEncoding</code> already exists in this codebase
+    (<code>quantum_neural_network.py:66–118</code>). It breaks the one-qubit-per-feature
+    constraint by cycling through qubits repeatedly:
+  </p>
+
+  <pre><span class="cm"># 450 features, 15 qubits → 30 passes</span>
+
+Pass 1:   RY(data[0])  → qubit 0
+          RY(data[1])  → qubit 1
+          ...
+          RY(data[14]) → qubit 14
+          <span class="hl">── CNOT entanglement (reverse linear) ──</span>
+
+Pass 2:   RY(data[15]) → qubit 0   <span class="cm"># same qubit, new value</span>
+          RY(data[16]) → qubit 1
+          ...
+          RY(data[29]) → qubit 14
+          <span class="hl">── CNOT entanglement ──</span>
+
+          <span class="dim">... 28 more passes ...</span>
+
+Pass 30:  RY(data[435]) → qubit 0
+          ...
+          RY(data[449]) → qubit 14
+          <span class="hl">── (no entanglement after final pass) ──</span></pre>
+
+  <p>
+    All 450 values are encoded. No PCA. No dimensionality reduction. The circuit remains
+    15 qubits.
+  </p>
+
+  <div class="callout warn">
+    <p>
+      <strong>Important caveat.</strong> Each pass overwrites the rotation state of the qubit from
+      the previous pass. <code>RY(data[15])</code> on qubit 0 does not "remember"
+      <code>RY(data[0])</code>. What carries information forward between passes is the
+      entanglement — the CNOT layers leave quantum correlations in the joint state that the
+      next rotation layer then acts on. Earlier data survives only as residual entanglement,
+      not as a stored value.
+    </p>
+    <p>
+      This is a genuine limitation. It is weaker than the amplitude encoding guarantee of
+      encoding every value simultaneously. But it is far stronger than discarding 97% of the
+      data via PCA.
+    </p>
+  </div>
+
+
+  <!-- ═══════════════════════════ SECTION 5 -->
+  <h2>What a Fair Comparison Looks Like</h2>
+
+  <p>
+    A controlled experiment isolates one variable. The variable of interest is the
+    <em>encoding strategy</em> — how the circuit loads data into the quantum state. Everything
+    else should be held constant:
+  </p>
+
+  <ul class="steps">
+    <li>
+      <div class="step-n">1</div>
+      <div class="step-body">
+        <strong>Same input</strong>
+        <span>Both receive the raw 450-value window (30 days × 15 assets), z-score standardised per feature. No PCA. No radial_to_linear expansion.</span>
+      </div>
+    </li>
+    <li>
+      <div class="step-n">2</div>
+      <div class="step-body">
+        <strong>Same information content</strong>
+        <span>The same 450 numbers enter both circuits. The only question is how each circuit loads them into a quantum state.</span>
+      </div>
+    </li>
+    <li>
+      <div class="step-n">3</div>
+      <div class="step-body">
+        <strong>Matched parameter budget</strong>
+        <span>num_weights is set proportionally to num_qubits, so neither circuit has more learnable capacity than the other per qubit.</span>
+      </div>
+    </li>
+    <li>
+      <div class="step-n teal">4</div>
+      <div class="step-body">
+        <strong>Single variable: encoding strategy</strong>
+        <span>Stacked angle encodes via sequential rotation passes. Amplitude encodes via state preparation. That difference — and only that difference — is what the performance comparison will reflect.</span>
+      </div>
+    </li>
+  </ul>
+
+  <table class="compare">
+    <thead>
+      <tr>
+        <th>Property</th>
+        <th>Stacked Angle (proposed)</th>
+        <th>Amplitude (proposed)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Input</td>
+        <td class="td-good">450 values, z-score standardised</td>
+        <td class="td-good">450 values, z-score standardised</td>
+      </tr>
+      <tr>
+        <td>Preprocessing</td>
+        <td class="td-good">standardize only (stateless)</td>
+        <td class="td-good">standardize only (stateless)</td>
+      </tr>
+      <tr>
+        <td>num_qubits</td>
+        <td class="td-a">15</td>
+        <td class="td-b">9 = ceil(log₂(450))</td>
+      </tr>
+      <tr>
+        <td>num_weights</td>
+        <td class="td-a">proportional to 15 qubits</td>
+        <td class="td-b">proportional to 9 qubits</td>
+      </tr>
+      <tr>
+        <td>How data enters circuit</td>
+        <td class="td-a">30 rotation passes × 15 qubits, CNOT between each pass</td>
+        <td class="td-b">StatePrep — 450 values as state amplitudes (unit-norm)</td>
+      </tr>
+      <tr>
+        <td>Information loss</td>
+        <td class="td-a">Earlier passes survive only as entanglement residue</td>
+        <td class="td-b">Magnitude (L2 norm) is discarded by normalisation</td>
+      </tr>
+    </tbody>
+  </table>
+
+
+  <!-- ═══════════════════════════ SECTION 6 -->
+  <h2>What Will Be Implemented</h2>
+
+  <p>
+    The changes to <code>MAIN.py</code> are minimal. Both model blocks are updated to use the
+    same preprocessing and the appropriate encoding:
+  </p>
+
+  <pre><span class="cm"># BEFORE — Angle Encoding (unfair)</span>
+pca = PCAWithNormalization(n_components=len(tickers))
+pca.fit(training_windows)
+model = DDPG(
+    encoding=<span class="hl">'angle'</span>,
+    input_transformation=<span class="hl">pca</span>,
+    transformed_input_size=<span class="hl">len(tickers)</span>,
+    num_weights=<span class="hl">30</span>,
+)
+
+<span class="cm"># AFTER — Stacked Angle Encoding (fair)</span>
+model = DDPG(
+    encoding=<span class="hl2">'stacked_angle'</span>,
+    input_transformation=<span class="hl2">standardize</span>,
+    <span class="cm"># no transformed_input_size — full 450 values go in</span>
+    num_weights=<span class="hl2">proportional to 15 qubits</span>,
+)</pre>
+
+  <pre><span class="cm"># BEFORE — Amplitude Encoding (unfair)</span>
+model = DDPG(
+    encoding=<span class="hl">'amplitude'</span>,
+    input_transformation=<span class="hl">radial_to_linear</span>,   <span class="cm"># 450 → 1800</span>
+    num_weights=<span class="hl">60</span>,
+)
+
+<span class="cm"># AFTER — Amplitude Encoding (fair)</span>
+model = DDPG(
+    encoding=<span class="hl2">'amplitude'</span>,
+    input_transformation=<span class="hl2">standardize</span>,        <span class="cm"># 450 → 450</span>
+    num_weights=<span class="hl2">proportional to 9 qubits</span>,
+)</pre>
+
+  <div class="callout teal">
+    <p>
+      The result is a controlled experiment where the <em>only</em> difference between the two
+      models is how they load data into a quantum state. Performance differences will, for the
+      first time, actually be interpretable as a property of the encoding strategy.
+    </p>
+  </div>
+
+  <hr>
+
+  <footer>
+    QDPG Encoding Analysis &mdash; generated from codebase review of
+    <code>predictors/quantum_neural_network.py</code>,
+    <code>predictors/input_transformations.py</code>, and
+    <code>MAIN.py</code>.
+  </footer>
+
+</div>
+</body>
+</html>

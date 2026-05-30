@@ -12,7 +12,7 @@ from humanfriendly import format_timespan
 
 from config import tickers
 from predictors import NeuralNetwork, QuantumNeuralNetwork
-from predictors.input_transformations import radial_to_linear, PCATransform, PCAWithNormalization
+from predictors.input_transformations import radial_to_linear, standardize
 
 from models import (
     EqualWeights,
@@ -31,7 +31,7 @@ from utilities.logger import ResultsLogger, activate_operations_logging
 
 # Choose which pipelines to run.
 RUN_MODELS = [
-    'QDPG (Angle Encoding)',
+    'QDPG (Stacked Angle Encoding)',
     'Equal Weights',
     'Mean Variance Optimization',
     'DDPG',
@@ -52,6 +52,11 @@ GLOBAL_CONFIG = {
     'SEED': 68,  # seed for reproducibility
     'DEBUG': False,  # whether to log all events to a file for debugging purposes
 }
+
+# Shared parameter budget for the fair encoding comparison (2 × 15 qubits).
+# Both the stacked-angle and amplitude QDPG models use this so neither has more
+# learnable capacity than the other.
+NUM_WEIGHTS = 30
 
 
 #-----------------------------------------------------------------------------
@@ -129,11 +134,11 @@ crossvalidation = TimeSeriesCrossValidation(
 #-----------------------------------------------------------------------------
 
 
-if 'QDPG (Angle Encoding)' in RUN_MODELS:
+if 'QDPG (Stacked Angle Encoding)' in RUN_MODELS:
 
     results_logger.log('''
 -----------------------------------------------------------------------------
-Quantum Deterministic Policy Gradient (Angle Encoding + PCA)
+Quantum Deterministic Policy Gradient (Stacked Angle Encoding)
 -----------------------------------------------------------------------------
 ''')
 
@@ -147,27 +152,17 @@ Quantum Deterministic Policy Gradient (Angle Encoding + PCA)
         val_data = price_data.iloc[train_index][val_split:]
         test_data = price_data.iloc[test_index]
 
-        # Data is already log-returns (pre-computed in get_data.py, fillna(0)
-        # applied). Build rolling windows directly — no re-transformation needed.
-        window_size = GLOBAL_CONFIG['LOOKBACK_WINDOW']
-        training_windows = np.array([
-            train_data.iloc[i:i + window_size].values.flatten()
-            for i in range(len(train_data) - window_size)
-        ])
-        pca = PCAWithNormalization(n_components=len(tickers))
-        pca.fit(training_windows)
-
         model = DDPG(
-            lookback_window=window_size,
+            lookback_window=GLOBAL_CONFIG['LOOKBACK_WINDOW'],
             forecast_window=0,
             batch_size=32,
             predictor=QuantumNeuralNetwork,
             critic_predictor=NeuralNetwork,
             critic_predictor_kwargs={'hidden_sizes': (30,)},
-            num_weights=30,
-            encoding='angle',
-            input_transformation=pca,
-            transformed_input_size=len(tickers),
+            num_weights=NUM_WEIGHTS,
+            encoding='stacked_angle',
+            input_transformation=standardize,
+            num_qubits=len(tickers),
             rotation_axes='y',
             short_selling=GLOBAL_CONFIG['SHORT_SELLING'],
             reduce_negatives=GLOBAL_CONFIG['CLAMP_NEGATIVES'],
@@ -219,12 +214,15 @@ Quantum Deterministic Policy Gradient
 
         model = DDPG(
             lookback_window=GLOBAL_CONFIG['LOOKBACK_WINDOW'],
-            forecast_window=GLOBAL_CONFIG['FORECAST_WINDOW'],
-            batch_size=1,
+            forecast_window=0,
+            batch_size=32,
             predictor=QuantumNeuralNetwork,
-            num_weights=60,
+            critic_predictor=NeuralNetwork,
+            critic_predictor_kwargs={'hidden_sizes': (30,)},
+            num_weights=NUM_WEIGHTS,
             encoding='amplitude',
-            input_transformation=radial_to_linear,
+            input_transformation=standardize,
+            num_qubits=len(tickers),
             rotation_axes='y',
             short_selling=GLOBAL_CONFIG['SHORT_SELLING'],
             reduce_negatives=GLOBAL_CONFIG['CLAMP_NEGATIVES'],
@@ -237,15 +235,12 @@ Quantum Deterministic Policy Gradient
             actor_lr=0.09935741130315447,
             critic_lr=0.0018039893844072358,
             optimizer=torch.optim.SGD,
-            # l1_lambda=1e7,
             l2_lambda=3.2067524338595386e-06,
-            # weight_decay=1e-6,
             soft_update=False,
-            # tau=1e-3,
             risk_preference=-0.9286138365176491,
             gamma=0.009826640813865617,
             num_epochs=50,
-            early_stopping=False,
+            early_stopping=True,
             patience=10,
         )
         results = model.evaluate(
