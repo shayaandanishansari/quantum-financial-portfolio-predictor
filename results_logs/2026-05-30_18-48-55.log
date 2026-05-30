@@ -111,3 +111,13 @@ Average Sharpe Ratio (DPO):	0.3811 (std: 0.3883, min: -0.0077, max: 0.7689)
 Quantum Q-Learning
 -----------------------------------------------------------------------------
 
+Execution time: 2 hours, 5 minutes and 56 seconds
+
+Results:
+    
+Average Profit p.a. (SPO):	4.6975 % (std: 14.3165, min: -11.1196, max: 17.5134)
+Average Sharpe Ratio (SPO):	0.0546 (std: 0.8728, min: -0.8647, max: 0.8809)
+
+Average Profit p.a. (DPO):	2.3614 % (std: 3.7728, min: -2.5117, max: 5.0340)
+Average Sharpe Ratio (DPO):	-0.1291 (std: 0.2277, min: -0.4285, max: 0.0269)
+
