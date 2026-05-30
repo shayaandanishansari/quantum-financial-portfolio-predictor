@@ -1,0 +1,56 @@
+
+-----------------------------------------------------------------------------
+
+                     PORTFOLIO OPTIMIZATION RESULTS LOG                      
+
+-----------------------------------------------------------------------------
+
+Tickers: ['AAPL', 'MSFT', 'JNJ', 'XOM', 'JPM', 'SPY', 'QQQ', 'IWM', 'XLV', 'XLF', 'TLT', 'LQD', 'GLD', 'USO', 'EFA']
+
+Config:
+    'LOOKBACK_WINDOW': 30,
+    'FORECAST_WINDOW': 7,
+    'DYNAMIC_PO': true,
+    'DPO_INTERVAL': 30,
+    'SHORT_SELLING': true,
+    'CLAMP_NEGATIVES': true,
+    'CV_SPLITS': 3,
+    'VERBOSE': 0,
+    'SEED': 68,
+    'DEBUG': false
+
+
+-----------------------------------------------------------------------------
+Deep Deterministic Policy Gradient
+-----------------------------------------------------------------------------
+
+Execution time: 11.8 seconds
+
+Results:
+    
+Average Profit p.a. (SPO):	10.5662 % (std: 7.3331, min: 3.0348, max: 17.7010)
+Average Sharpe Ratio (SPO):	0.4383 (std: 0.4680, min: -0.0501, max: 0.8858)
+
+Average Profit p.a. (DPO):	10.5731 % (std: 7.7319, min: 2.8507, max: 18.3146)
+Average Sharpe Ratio (DPO):	0.4370 (std: 0.4864, min: -0.0566, max: 0.9162)
+
+
+-----------------------------------------------------------------------------
+Quantum Deterministic Policy Gradient (Stacked Angle Encoding)
+-----------------------------------------------------------------------------
+
+Execution time: 40 minutes and 4.29 seconds
+
+Results:
+    
+Average Profit p.a. (SPO):	22.7157 % (std: 23.3678, min: 5.0587, max: 51.7943)
+Average Sharpe Ratio (SPO):	0.8481 (std: 0.8138, min: 0.0279, max: 1.6555)
+
+Average Profit p.a. (DPO):	29.5691 % (std: 6.4915, min: 21.2068, max: 34.1899)
+Average Sharpe Ratio (DPO):	0.7688 (std: 0.1190, min: 0.6791, max: 0.9170)
+
+
+-----------------------------------------------------------------------------
+Quantum Deterministic Policy Gradient
+-----------------------------------------------------------------------------
+

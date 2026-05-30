@@ -463,9 +463,14 @@ critic = self.<span class="add">critic_predictor</span>(
   <h2>Status &amp; Caveats</h2>
   <ul class="tidy">
     <li>After the angle-bounding refinement (§1), the stacked-angle model trains properly: the latest
-      3-fold run gives <strong>stacked-angle ≈ 22%</strong> vs <strong>amplitude ≈ 8%</strong> profit
+      3-fold run gives <strong>stacked-angle ≈ 29.6% DPO</strong> vs <strong>amplitude ≈ 11.1%</strong> profit
       p.a., reversing the earlier untrained result. (Earlier amplitude runs scored higher with more CV
       folds / more training data; the ranking is dataset-budget dependent.)</li>
+    <li><strong>Fair classical baseline:</strong> classical DDPG was re-run on the same training regime as
+      QDPG (batch_size=32, forecast_window=0, early_stopping=True, identical LRs) — the only difference
+      is <code>NeuralNetwork</code> vs <code>QuantumNeuralNetwork</code>. Classical DDPG now scores
+      <strong>≈10.6% DPO / Sharpe 0.44</strong> (vs the old under-tuned 0.9% / Sharpe −0.03), competitive
+      with amplitude QDPG. Only stacked-angle clearly leads, confirming the advantage is genuine.</li>
     <li>The angle-bounding change (<code>normalized_arcsin</code> + the min-max/arcsin guards) is
       currently an <strong>uncommitted</strong> working-tree edit on top of HEAD <code>46b82bb</code>.</li>
     <li>The <code>PCATransform</code> / <code>PCAWithNormalization</code> classes remain in

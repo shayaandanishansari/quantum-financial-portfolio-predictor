@@ -108,7 +108,7 @@ separate benchmark baseline but **intentionally skipped it** for now.)
 
 ## 6. Results — full detail
 
-Source: `results_logs/2026-05-30_18-48-55.log`. CV_SPLITS=3, SEED=68. The "std" printed by
+QDPG models source: `results_logs/2026-05-30_18-48-55.log`. Classical DDPG source: `results_logs/2026-05-31_00-38-35.log` (re-run on the QDPG training regime — see §7). CV_SPLITS=3, SEED=68. The "std" printed by
 `print_results` is actually the **interquartile range (IQR = P75 − P25)**, not standard deviation —
 relabel it in the paper.
 
@@ -133,15 +133,20 @@ relabel it in the paper.
 |---|---|---|---|
 | Equal Weights | 11.5186% / 0.5844 | — (SPO only) | 0s |
 | Mean-Variance Optimization | 15.2244% / 0.4590 | 17.0625% / 0.5926 | 1.31s |
-| Classical DDPG | 0.8186% / −0.0347 | 0.9436% / −0.0334 | 2m14s |
+| Classical DDPG | 10.5662% / 0.4383 | 10.5731% / 0.4370 | 2.11s |
 | Deep Q-Learning | 13.4950% / 0.5281 | 15.1660% / 0.3811 | 36.36s |
 | Quantum Q-Learning | **did not complete in this log** (header only) | | |
 
 ## 7. Interpretation
 
 - **Stacked angle wins decisively on DPO** (29.6%, Sharpe 0.77, all 3 folds 21–34%) — best model in the
-  run, beating MVO (17%), DQL (15%), Equal Weights (11.5%), and amplitude QDPG (11%).
-- **Why:** (1) stacked angle is a *data re-uploading* circuit (30 re-uploads + entanglement) → far more
+  run, beating MVO (17%), DQL (15%), Equal Weights (11.5%), amplitude QDPG (11.1%), and classical DDPG (10.6%).
+- **Fair comparison:** classical DDPG was re-run on the *same* training regime as QDPG (batch_size=32,
+  forecast_window=0, early_stopping=True, identical LRs/hyperparameters). The only remaining difference
+  is `NeuralNetwork` vs `QuantumNeuralNetwork`. Classical DDPG (10.6% / Sharpe 0.44) is now competitive
+  with amplitude QDPG (11.1% / Sharpe 0.13); only stacked-angle clearly leads — suggesting that advantage
+  is genuine and not a configuration artifact.
+- **Why stacked angle leads:** (1) it is a *data re-uploading* circuit (30 re-uploads + entanglement) → far more
   expressive once it trains; (2) amplitude **L2-normalizes**, discarding the window's magnitude
   (volatility scale) and temporal order — information that matters for this task; stacked angle keeps
   both as bounded per-value rotations. Matches "Scenario A" in `encoding_comparison_v2.html`.

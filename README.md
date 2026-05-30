@@ -57,9 +57,11 @@ The takeaway: **identical preprocessing is not the same as a fair comparison** �
 | Mean-Variance Optimization | 17.06 (10.37 → 25.36) | 0.593 | 15.22 | 0.459 |
 | Deep Q-Learning | 15.17 (4.07 → 21.16) | 0.381 | 13.50 | 0.528 |
 | Equal Weights | — | — | 11.52 | 0.584 |
-| Classical DDPG | 0.94 (−9.58 → 15.85) | −0.035 | 0.82 | −0.035 |
+| Classical DDPG | 10.57 (2.85 → 18.31) | 0.437 | 10.57 | 0.438 |
 
 **Stacked-angle QDPG is the strongest model on DPO** (≈29.6% p.a., Sharpe 0.77, all three folds in 21–34%), beating the amplitude QDPG and every classical baseline. The result is consistent with the encoding mechanism: data re-uploading is more expressive and preserves magnitude + temporal order, whereas amplitude encoding discards both.
+
+> **Fair comparison note.** Classical DDPG is now trained on the *same* regime as QDPG (batch_size=32, forecast_window=0, early_stopping=True, identical LRs and hyperparameters) — the only difference is `NeuralNetwork` vs `QuantumNeuralNetwork`. At ≈10.6% DPO profit / Sharpe 0.44, classical DDPG is competitive with amplitude QDPG (≈11.1%) and only the stacked-angle encoding clearly leads, suggesting that advantage is genuine rather than a configuration artifact.
 
 > **Note on variance.** At 3 folds the *SPO* figure is noisy (folds spanned 5–52%); the *DPO* figure is tight and is the one to trust. The win reflects the full stacked-angle *strategy* (a deeper re-uploading circuit), and amplitude's cheap state-prep is a simulation convenience — on real hardware amplitude encoding is the expensive one.
 
