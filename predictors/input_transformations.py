@@ -33,7 +33,7 @@ def min_max_scale_to_range(
     '''
     # Normalize to [0, 1]
     X_min, X_max = torch.min(X, dim=0).values, torch.max(X, dim=0).values
-    X_normalized = (X - X_min) / (X_max - X_min)
+    X_normalized = (X - X_min) / (X_max - X_min + 1e-8)
     
     # Scale to [min_val, max_val]
     min_val, max_val = range
@@ -56,8 +56,8 @@ def normalized_arcsin(X: torch.Tensor) -> torch.Tensor:
     # Normalize to [-1, 1]
     X = min_max_scale_to_range(X, range=(-1, 1))
 
-    # Apply arcsin
-    X = torch.arcsin(X)
+    # Apply arcsin (clamp to avoid the infinite-derivative endpoints / NaNs)
+    X = torch.arcsin(X.clamp(-1 + 1e-6, 1 - 1e-6))
 
     return X
 

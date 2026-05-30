@@ -12,7 +12,7 @@ from humanfriendly import format_timespan
 
 from config import tickers
 from predictors import NeuralNetwork, QuantumNeuralNetwork
-from predictors.input_transformations import radial_to_linear, standardize
+from predictors.input_transformations import radial_to_linear, standardize, normalized_arcsin
 
 from models import (
     EqualWeights,
@@ -161,7 +161,7 @@ Quantum Deterministic Policy Gradient (Stacked Angle Encoding)
             critic_predictor_kwargs={'hidden_sizes': (30,)},
             num_weights=NUM_WEIGHTS,
             encoding='stacked_angle',
-            input_transformation=standardize,
+            input_transformation=normalized_arcsin,
             num_qubits=len(tickers),
             rotation_axes='y',
             short_selling=GLOBAL_CONFIG['SHORT_SELLING'],

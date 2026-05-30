@@ -24,22 +24,22 @@ Config:
 Quantum Deterministic Policy Gradient (Stacked Angle Encoding)
 -----------------------------------------------------------------------------
 
-Execution time: 1 hour, 4 minutes and 47.66 seconds
+Execution time: 19 minutes and 7.02 seconds
 
 Results:
     
-Average Profit p.a. (SPO):	1.0123 % (std: 27.9440, min: -28.7385, max: 27.1495)
-Average Sharpe Ratio (SPO):	0.0231 (std: 0.7066, min: -0.6908, max: 0.7225)
+Average Profit p.a. (SPO):	22.7157 % (std: 23.3678, min: 5.0587, max: 51.7943)
+Average Sharpe Ratio (SPO):	0.8481 (std: 0.8138, min: 0.0279, max: 1.6555)
 
-Average Profit p.a. (DPO):	2.2548 % (std: 8.3197, min: -6.6561, max: 9.9833)
-Average Sharpe Ratio (DPO):	-0.0377 (std: 0.2936, min: -0.3315, max: 0.2558)
+Average Profit p.a. (DPO):	29.5691 % (std: 6.4915, min: 21.2068, max: 34.1899)
+Average Sharpe Ratio (DPO):	0.7688 (std: 0.1190, min: 0.6791, max: 0.9170)
 
 
 -----------------------------------------------------------------------------
 Quantum Deterministic Policy Gradient
 -----------------------------------------------------------------------------
 
-Execution time: 6 minutes and 24.12 seconds
+Execution time: 6 minutes and 2.01 seconds
 
 Results:
     
@@ -66,7 +66,7 @@ Average Sharpe Ratio (SPO):	0.5844 (std: 0.4498, min: 0.0172, max: 0.9168)
 Mean-Variance Optimization
 -----------------------------------------------------------------------------
 
-Execution time: 1.3 seconds
+Execution time: 1.31 seconds
 
 Results:
     
@@ -81,7 +81,7 @@ Average Sharpe Ratio (DPO):	0.5926 (std: 0.3572, min: 0.1908, max: 0.9051)
 Deep Deterministic Policy Gradient
 -----------------------------------------------------------------------------
 
-Execution time: 3 minutes and 43.03 seconds
+Execution time: 2 minutes and 14.46 seconds
 
 Results:
     
@@ -96,7 +96,7 @@ Average Sharpe Ratio (DPO):	-0.0334 (std: 0.5780, min: -0.4858, max: 0.6703)
 Deep Q-Learning
 -----------------------------------------------------------------------------
 
-Execution time: 43.5 seconds
+Execution time: 36.36 seconds
 
 Results:
     

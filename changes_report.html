@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QDPG — What Changed Since the Base Commit</title>
+<style>
+  :root {
+    --bg:       #f5f4f0;
+    --surface:  #ffffff;
+    --border:   #dddbd4;
+    --accent-a: #5b4fcf;
+    --accent-b: #1a9090;
+    --text:     #1e1e2e;
+    --muted:    #6b6b80;
+    --code-bg:  #f0ede8;
+    --tag-a:    rgba(91,79,207,0.10);
+    --tag-b:    rgba(26,144,144,0.10);
+    --warn:     rgba(217,119,6,0.10);
+    --warn-border: #d97706;
+    --good:     rgba(22,120,22,0.10);
+    --good-border: #167814;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', Georgia, system-ui, serif;
+    font-size: 16px;
+    line-height: 1.75;
+    padding: 48px 20px 100px;
+  }
+
+  .page { max-width: 860px; margin: 0 auto; }
+
+  /* ── Header ── */
+  header { margin-bottom: 48px; border-bottom: 2px solid var(--border); padding-bottom: 32px; }
+
+  .kicker {
+    font-size: 0.78rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1.5px; color: var(--accent-a); margin-bottom: 12px;
+  }
+  .version-badge {
+    display: inline-block; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; padding: 3px 10px; border-radius: 4px;
+    background: var(--good); color: var(--good-border); margin-left: 10px; vertical-align: middle;
+  }
+  header h1 {
+    font-size: 2.05rem; font-weight: 700; line-height: 1.25;
+    letter-spacing: -0.5px; color: var(--text); margin-bottom: 16px;
+  }
+  .subtitle { font-size: 1.05rem; color: var(--muted); line-height: 1.65; }
+
+  .commit-line {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.82rem; color: var(--muted); margin-top: 16px;
+  }
+  .commit-line b { color: var(--text); }
+  .commit-line .arrow { color: var(--accent-a); font-weight: 700; padding: 0 6px; }
+
+  /* ── Section headings ── */
+  h2 {
+    font-size: 1.3rem; font-weight: 700; color: var(--text);
+    margin: 56px 0 8px; letter-spacing: -0.2px;
+  }
+  .sec-num {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 30px; height: 30px; border-radius: 8px;
+    background: var(--accent-a); color: #fff; font-size: 0.9rem; font-weight: 700;
+    margin-right: 12px; vertical-align: middle;
+  }
+  .sec-files {
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.76rem; color: var(--muted); margin: 0 0 18px 42px;
+  }
+  h3 {
+    font-size: 0.95rem; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.8px; margin: 26px 0 8px;
+  }
+
+  /* ── Body text ── */
+  p { margin-bottom: 16px; }
+  strong { font-weight: 700; color: var(--text); }
+  code {
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.85em; background: var(--code-bg); border: 1px solid var(--border);
+    border-radius: 3px; padding: 1px 6px; color: var(--accent-a);
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 22px 26px; margin: 18px 0;
+  }
+
+  /* ── Before / after grid ── */
+  .ba { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 18px 0; }
+  @media (max-width: 700px) { .ba { grid-template-columns: 1fr; } }
+  .ba-col h4 {
+    font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 1px; margin-bottom: 8px;
+  }
+  .ba-before h4 { color: var(--warn-border); }
+  .ba-after  h4 { color: var(--good-border); }
+
+  /* ── Block code ── */
+  pre {
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 8px;
+    padding: 14px 16px; overflow-x: auto;
+    font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.78rem; line-height: 1.65; margin: 0; color: #1e1e2e;
+  }
+  .ba-before pre { border-left: 3px solid var(--warn-border); }
+  .ba-after  pre { border-left: 3px solid var(--good-border); }
+  .cm  { color: #9a9aaa; font-style: italic; }
+  .del { color: var(--warn-border); }
+  .add { color: var(--good-border); font-weight: 600; }
+  .hl  { color: var(--accent-a); font-weight: 600; }
+
+  /* ── Callouts ── */
+  .callout {
+    border-left: 3px solid var(--accent-a); background: var(--tag-a);
+    border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 20px 0; font-size: 0.94rem;
+  }
+  .callout.teal { border-left-color: var(--accent-b); background: var(--tag-b); }
+  .callout.warn { border-left-color: var(--warn-border); background: var(--warn); }
+  .callout.good { border-left-color: var(--good-border); background: var(--good); }
+  .callout p { margin-bottom: 0; }
+  .callout .why { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px;
+    font-weight: 700; color: var(--accent-a); margin-right: 6px; }
+  .callout.teal .why { color: var(--accent-b); }
+  .callout.good .why { color: var(--good-border); }
+
+  /* ── Comparison / stat tables ── */
+  .compare { width: 100%; border-collapse: collapse; margin: 18px 0; font-size: 0.88rem; }
+  .compare th {
+    padding: 9px 14px; text-align: left; font-size: 0.74rem; text-transform: uppercase;
+    letter-spacing: 0.8px; color: var(--muted); border-bottom: 2px solid var(--border);
+  }
+  .compare td {
+    padding: 10px 14px; border-bottom: 1px solid var(--border);
+    vertical-align: top; line-height: 1.5;
+  }
+  .compare tr:last-child td { border-bottom: none; }
+  .compare td:first-child { color: var(--muted); width: 26%; }
+  .td-warn { color: var(--warn-border); font-weight: 500; }
+  .td-good { color: var(--good-border); font-weight: 500; }
+  .mono { font-family: 'Cascadia Code', 'Fira Code', monospace; font-size: 0.82rem; }
+
+  /* ── Diffstat bar ── */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 20px 0; }
+  @media (max-width: 600px) { .stat-grid { grid-template-columns: 1fr; } }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 16px 18px; text-align: center;
+  }
+  .stat .n { font-size: 1.7rem; font-weight: 700; color: var(--accent-a); line-height: 1.2; }
+  .stat .l { font-size: 0.8rem; color: var(--muted); }
+
+  /* ── Bullet lists ── */
+  ul.tidy { margin: 10px 0 16px 0; padding-left: 22px; }
+  ul.tidy li { margin-bottom: 8px; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
+
+  footer {
+    margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 0.85rem;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <div class="kicker">QDPG — Change Report <span class="version-badge">Base → HEAD</span></div>
+    <h1>What Changed Since the Initial Commit</h1>
+    <p class="subtitle">
+      A walkthrough of every meaningful difference between the original public codebase and the
+      current version: the controlled encoding experiment, the batched training loop, an independent
+      critic, numerical-stability guards, and config changes — with the reasoning behind each.
+    </p>
+    <p class="commit-line">
+      <b>94998cb</b> [INIT] Base commit <span class="arrow">→</span> <b>46b82bb</b> [FEATURE] stacked angle encoding. Fair comparison
+      &nbsp;·&nbsp; generated 2026-05-30 &nbsp;·&nbsp; HEAD + uncommitted angle-bounding refinement
+    </p>
+  </header>
+
+
+  <!-- ═══════════════════════════ OVERVIEW -->
+  <h2>At a Glance</h2>
+  <p>
+    The diff spans 53 files, but most are generated artifacts. The substance lives in three source
+    files — <code>MAIN.py</code>, <code>ddpg/ddpg_functions.py</code>, and
+    <code>predictors/input_transformations.py</code> — plus a set of new design documents.
+  </p>
+
+  <div class="stat-grid">
+    <div class="stat"><div class="n">53</div><div class="l">files touched</div></div>
+    <div class="stat"><div class="n">~5,600</div><div class="l">insertions</div></div>
+    <div class="stat"><div class="n">3</div><div class="l">core source files changed</div></div>
+  </div>
+
+  <table class="compare">
+    <thead><tr><th>File</th><th>What changed</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">MAIN.py</td><td>Two confounded QDPG models → one controlled stacked-angle vs amplitude comparison</td></tr>
+      <tr><td class="mono">ddpg/ddpg_functions.py</td><td>Sequential training loop → batched/vectorized loop + grad clipping + independent critic</td></tr>
+      <tr><td class="mono">predictors/input_transformations.py</td><td>Added PCA transforms; numerical guards on <code>standardize</code>, min-max &amp; arcsin (angle bounding)</td></tr>
+      <tr><td class="mono">predictors/quantum_neural_network.py</td><td>Added <code>transformed_input_size</code> parameter</td></tr>
+      <tr><td class="mono">utilities/*, q_learning/*</td><td>NaN/div-by-zero guards, type-hint and terminal-compat fixes</td></tr>
+      <tr><td class="mono">*.html, *.md, *.ipynb</td><td>New design docs, setup notes, and analysis notebooks</td></tr>
+    </tbody>
+  </table>
+
+
+  <!-- ═══════════════════════════ 1. ENCODING -->
+  <h2><span class="sec-num">1</span>Encoding Strategy &amp; the Fair Comparison</h2>
+  <p class="sec-files">MAIN.py · predictors/input_transformations.py · predictors/quantum_neural_network.py</p>
+
+  <p>
+    The base repo had a <strong>single</strong> quantum model (<code>'QDPG'</code>) using amplitude
+    encoding with a 4× feature expansion. The current version replaces it with <strong>two</strong>
+    models designed to isolate the encoding mechanism — each given the preprocessing its encoding
+    actually needs (bounded angles for the angle circuit, a unit-norm state for amplitude).
+  </p>
+
+  <div class="ba">
+    <div class="ba-col ba-before">
+      <h4>Before — single, confounded model</h4>
+      <pre>model = DDPG(
+    <span class="cm"># forecast adds to input → 555 vals</span>
+    forecast_window=<span class="del">7</span>,
+    batch_size=<span class="del">1</span>,
+    predictor=QuantumNeuralNetwork,
+    num_weights=<span class="del">60</span>,
+    encoding=<span class="del">'amplitude'</span>,
+    input_transformation=<span class="del">radial_to_linear</span>,
+    <span class="cm"># num_qubits auto → ~11–12</span>
+)</pre>
+    </div>
+    <div class="ba-col ba-after">
+      <h4>After — two models, only encoding differs</h4>
+      <pre>model = DDPG(
+    forecast_window=<span class="add">0</span>,            <span class="cm"># 450 vals</span>
+    batch_size=<span class="add">32</span>,
+    predictor=QuantumNeuralNetwork,
+    critic_predictor=<span class="add">NeuralNetwork</span>,
+    num_weights=<span class="add">NUM_WEIGHTS</span>,     <span class="cm"># 30</span>
+    encoding=<span class="hl">'stacked_angle'</span> <span class="cm">/ 'amplitude'</span>,
+    input_transformation=<span class="add">normalized_arcsin</span>  <span class="cm"># angle: bounded</span>
+                       <span class="add">/ standardize</span>,     <span class="cm"># amplitude</span>
+    num_qubits=<span class="add">len(tickers)</span>,   <span class="cm"># 15</span>
+)</pre>
+    </div>
+  </div>
+
+  <table class="compare">
+    <thead><tr><th>Property</th><th>Base (confounded)</th><th>Now (controlled)</th></tr></thead>
+    <tbody>
+      <tr><td>Models</td><td class="td-warn">1 (amplitude only)</td><td class="td-good">2 (stacked-angle + amplitude)</td></tr>
+      <tr><td>Preprocessing</td><td class="td-warn">radial_to_linear (450→1,800)</td><td class="td-good">normalized_arcsin (angle) · standardize (amp) — both 450</td></tr>
+      <tr><td>num_qubits</td><td class="td-warn">auto ~11–12</td><td class="td-good">15 (both)</td></tr>
+      <tr><td>num_weights</td><td class="td-warn">60</td><td class="td-good">30 shared (NUM_WEIGHTS)</td></tr>
+      <tr><td>batch_size</td><td class="td-warn">1</td><td class="td-good">32 (both)</td></tr>
+      <tr><td>forecast_window</td><td class="td-warn">7 → 555 inputs</td><td class="td-good">0 → 450 inputs</td></tr>
+      <tr><td>Critic</td><td class="td-warn">quantum (= actor)</td><td class="td-good">classical (identical for both)</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Supporting code</h3>
+  <ul class="tidy">
+    <li>A <code>transformed_input_size</code> parameter was added to
+      <code>QuantumNeuralNetwork.__init__</code> (so a preprocessing step that changes the input
+      dimension can declare its output size).</li>
+    <li><code>PCATransform</code> and <code>PCAWithNormalization</code> classes were added to
+      <code>input_transformations.py</code>. These powered an <em>intermediate</em> angle-encoding +
+      PCA exploration that has since been superseded by <code>stacked_angle</code> +
+      <code>normalized_arcsin</code>; the classes remain in the file but are no longer wired into
+      <code>MAIN.py</code>.</li>
+  </ul>
+
+  <div class="callout good">
+    <p><span class="why">Why</span> The base setup confounded the encoding with its preprocessing,
+    qubit count, and parameter budget — so any performance difference couldn't be attributed to the
+    encoding itself. Equalising the qubit count, parameter budget, critic, batching, and data window
+    leaves the <code>encoding</code> mechanism as the variable of interest.</p>
+  </div>
+
+  <h3>Refinement — bounded angles for the stacked encoder</h3>
+  <p>
+    A first run used <code>standardize</code> for <em>both</em> models. Amplitude trained fine, but the
+    stacked-angle model behaved like an untrained network — wildly variable, Sharpe ≈ 0. The cause:
+    raw z-scores (~±4, unbounded) were fed directly as RY rotation angles, and each qubit accumulates
+    <strong>30</strong> of them across the 30 stacked passes, over-rotating the circuit into a regime
+    where it couldn't learn. The fix was to give the angle circuit <strong>bounded</strong> inputs via
+    <code>normalized_arcsin</code> (min-max → arcsin → [−π/2, π/2]); amplitude keeps
+    <code>standardize</code> since it L2-normalizes into a state and doesn't care about angle bounds.
+  </p>
+
+  <div class="callout teal">
+    <p><span class="why">Why</span> <strong>Identical preprocessing is not the same as fair.</strong>
+    Each encoding needs the preprocessing it was designed for — bounded angles for angle encoding (the
+    original angle path used arcsin for exactly this reason), a unit-norm state for amplitude. After
+    bounding, the stacked-angle model trains properly and the comparison becomes meaningful.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════ 2. BATCHING -->
+  <h2><span class="sec-num">2</span>Batched / Vectorized Training Loop</h2>
+  <p class="sec-files">ddpg/ddpg_functions.py — the "OPTIMISED VERSION"</p>
+
+  <p>
+    The base training loop processed one window at a time with <code>state.flatten()</code> and then
+    sampled exactly one transition from the replay buffer — so <code>batch_size</code> was effectively
+    ignored for the gradient step. The loop was rewritten to operate on full batches.
+  </p>
+
+  <div class="ba">
+    <div class="ba-col ba-before">
+      <h4>Before — one sample at a time</h4>
+      <pre>portfolio_allocation = self.actor(
+    state.<span class="del">flatten()</span>)
+...
+replay_buffer.push((state, ...))
+<span class="cm"># sample a SINGLE transition</span>
+transition = replay_buffer.<span class="del">sample(1)</span>
+state = transition[0][0]
+...
+critic_loss = (target - q).<span class="del">pow(2)</span></pre>
+    </div>
+    <div class="ba-col ba-after">
+      <h4>After — full batch</h4>
+      <pre>b = state.shape[0]
+state_flat = state.<span class="add">view(b, -1)</span>
+portfolio_allocation = self.actor(state_flat)
+...
+for i in range(b):           <span class="cm"># push each</span>
+    replay_buffer.push((state[i], ...))
+k = <span class="add">min(batch_size, len(replay_buffer))</span>
+transitions = replay_buffer.<span class="add">sample(k)</span>
+...
+critic_loss = (target - q).pow(2).<span class="add">mean()</span>
+<span class="add">clip_grad_norm_(..., max_norm=1.0)</span></pre>
+    </div>
+  </div>
+
+  <ul class="tidy">
+    <li><strong>Batched forward passes</strong> for actor and critic, in both the training and
+      validation loops.</li>
+    <li><strong>Replay buffer</strong> now pushes each transition individually then samples a full
+      batch of size <code>min(batch_size, len)</code> — so increasing <code>batch_size</code> actually
+      takes effect.</li>
+    <li><strong>Gradient clipping</strong> (<code>clip_grad_norm_(max_norm=1.0)</code>) added on both
+      networks.</li>
+    <li><strong>Reward fixed</strong> to a proper per-sample daily-return mean/std via
+      <code>state * pa.unsqueeze(1)</code> giving <code>(b, window)</code> returns.</li>
+  </ul>
+
+  <div class="callout teal">
+    <p><span class="why">Why</span> At <code>batch_size=1</code> the model took ~one noisy gradient
+    step per window (~1,300+ per epoch). Batching cuts gradient steps roughly 32×, stabilises the
+    updates, and is the main reason the expensive 15-qubit simulations are now tractable; gradient
+    clipping guards against exploding updates.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════ 3. CRITIC -->
+  <h2><span class="sec-num">3</span>Independent Critic Network</h2>
+  <p class="sec-files">ddpg/ddpg_functions.py</p>
+
+  <p>
+    In the base code the critic was always instantiated from the <em>same class as the actor</em> with
+    the same keyword arguments — so a quantum actor forced a quantum critic. New
+    <code>critic_predictor</code> / <code>critic_predictor_kwargs</code> arguments decouple them.
+  </p>
+
+  <div class="ba">
+    <div class="ba-col ba-before">
+      <h4>Before</h4>
+      <pre>critic = self.<span class="del">predictor</span>(
+    input_size=...,
+    output_size=1,
+    <span class="del">**self.predictor_kwargs</span>,
+)</pre>
+    </div>
+    <div class="ba-col ba-after">
+      <h4>After</h4>
+      <pre>self.critic_predictor = kwargs.pop(
+    <span class="add">'critic_predictor'</span>, predictor)
+...
+critic = self.<span class="add">critic_predictor</span>(
+    input_size=...,
+    output_size=1,
+    <span class="add">**self.critic_predictor_kwargs</span>,
+)</pre>
+    </div>
+  </div>
+
+  <div class="callout">
+    <p><span class="why">Why</span> Lets a quantum actor be paired with a fast classical critic, and —
+    crucially for Section 1 — keeps the critic <strong>identical</strong> across both encoding models
+    (<code>NeuralNetwork(hidden_sizes=(30,))</code>), so the critic isn't an extra confounding
+    variable in the comparison.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════ 4. GUARDS -->
+  <h2><span class="sec-num">4</span>Numerical-Stability &amp; Robustness Guards</h2>
+  <p class="sec-files">input_transformations.py · ddpg_functions.py · metrics.py · MAIN.py · data_processing.py</p>
+
+  <p>Several small but important fixes prevent <code>NaN</code>/divide-by-zero from crashing runs or
+  silently poisoning the cross-validation averages.</p>
+
+  <table class="compare">
+    <thead><tr><th>Location</th><th>Before</th><th>After</th></tr></thead>
+    <tbody>
+      <tr><td class="mono">standardize</td><td class="td-warn mono">(X - mean) / std</td><td class="td-good mono">/ (std + 1e-8)</td></tr>
+      <tr><td class="mono">min_max_scale_to_range</td><td class="td-warn mono">/ (X_max - X_min)</td><td class="td-good mono">/ (X_max - X_min + 1e-8)</td></tr>
+      <tr><td class="mono">normalized_arcsin</td><td class="td-warn mono">arcsin(x)</td><td class="td-good mono">arcsin(x.clamp(±(1-1e-6)))</td></tr>
+      <tr><td class="mono">DDPG activation</td><td class="td-warn mono">x / sum(x)</td><td class="td-good mono">/ (sum(x) + 1e-8)</td></tr>
+      <tr><td class="mono">reduce_negatives</td><td class="td-warn mono">clamped / sum</td><td class="td-good mono">/ (sum + 1e-8)</td></tr>
+      <tr><td class="mono">print_results</td><td class="td-warn mono">np.mean / min / max</td><td class="td-good mono">np.nanmean / nanmin / nanmax</td></tr>
+      <tr><td class="mono">arima_forecast</td><td class="td-warn">no NaN handling</td><td class="td-good">fall back to last observed value</td></tr>
+    </tbody>
+  </table>
+
+  <div class="callout warn">
+    <p><span class="why">Why</span> Zero-sum portfolio allocations, zero-variance windows, constant
+    features (min = max), arcsin's infinite-derivative endpoints, and failed ARIMA forecasts all
+    produced <code>NaN</code>s or gradient spikes in the base code. The <code>+ 1e-8</code> guards,
+    arcsin clamp, and NaN-aware aggregation keep a single bad fold from taking down the whole run or
+    skewing the reported averages.</p>
+  </div>
+
+
+  <!-- ═══════════════════════════ 5. CONFIG -->
+  <h2><span class="sec-num">5</span>Experiment Config &amp; Ergonomics</h2>
+  <p class="sec-files">MAIN.py · ddpg/ · q_learning/ · utilities/wrappers.py · docs</p>
+
+  <ul class="tidy">
+    <li><code>CV_SPLITS</code> reduced <span class="mono">7 → 3</span> for faster iteration, and a
+      shared <code>NUM_WEIGHTS = 30</code> constant added.</li>
+    <li>Type hints corrected: <code>predictor: predictors</code> → <code>predictor: Type</code>
+      (in both <code>ddpg</code> and <code>q_learning</code>).</li>
+    <li>Progress-bar fill character <span class="mono">█ → #</span> for Windows-terminal compatibility.</li>
+    <li><strong>New documentation &amp; tooling:</strong> expanded <code>README</code>,
+      <code>COLAB_SETUP.md</code>, <code>TODO.md</code>, <code>analysis.md</code>,
+      <code>requirements.txt</code> updates, <code>keep_awake.py</code>,
+      <code>explore_data.ipynb</code>, and three design docs —
+      <code>encoding_comparison.html</code> (v1), <code>encoding_comparison_v2.html</code>, and
+      <code>qdpg_pipeline.html</code>.</li>
+    <li><strong>Generated artifacts</strong> (not part of the narrative): <code>results_logs/*.log</code>,
+      <code>__pycache__/</code>, <code>.idea/</code>.</li>
+  </ul>
+
+
+  <hr>
+
+  <!-- ═══════════════════════════ STATUS -->
+  <h2>Status &amp; Caveats</h2>
+  <ul class="tidy">
+    <li>After the angle-bounding refinement (§1), the stacked-angle model trains properly: the latest
+      3-fold run gives <strong>stacked-angle ≈ 22%</strong> vs <strong>amplitude ≈ 8%</strong> profit
+      p.a., reversing the earlier untrained result. (Earlier amplitude runs scored higher with more CV
+      folds / more training data; the ranking is dataset-budget dependent.)</li>
+    <li>The angle-bounding change (<code>normalized_arcsin</code> + the min-max/arcsin guards) is
+      currently an <strong>uncommitted</strong> working-tree edit on top of HEAD <code>46b82bb</code>.</li>
+    <li>The <code>PCATransform</code> / <code>PCAWithNormalization</code> classes remain in
+      <code>input_transformations.py</code> as a deliberate artifact of the intermediate angle+PCA
+      exploration; they are no longer referenced by <code>MAIN.py</code>.</li>
+    <li><code>radial_to_linear</code> is still used by the <code>'Quantum Q-Learning'</code> model, so
+      it was intentionally kept.</li>
+  </ul>
+
+  <footer>
+    QDPG Change Report &mdash; diff of <code>94998cb</code> → <code>46b82bb</code> + working-tree refinements.
+    Companion to <code>qdpg_pipeline.html</code> and <code>encoding_comparison_v2.html</code>.
+  </footer>
+
+</div>
+</body>
+</html>
